@@ -1,67 +1,80 @@
-# paraun_2018
-Parauncinula genomics 2018
+# Parauncinula septata
 
-# Bacterial contamination
+Information about the sample:
 
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.out | sort | uniq | awk 'FS="_"{num+=$6;++i}END{print num" "i" "num/i}'
-65750.2 50270 1.30794
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.out | sort | uniq | awk 'FS="_"{num+=$4;++i}END{print num" "i" "num/i}'
-64098655 50270 1275.09
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.noqcov.out | sort | uniq | awk 'FS="_"{num+=$4;++i}END{print num" "i" "num/i}'
-129098971 60377 2138.21
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.noqcov.out | sort | uniq | awk 'FS="_"{num+=$6;++i}END{print num" "i" "num/i}'
-86292.3 60377 1.42922
+Parauncinula septata on Quercus serrata
+collected: 9 November 2017 in Torimiyama Park, Haibara, Uda-shi, Nara Prefecture, Japan
+(DNA extracts were prepared from the same collection)
 
-Contigs found, q cov is 25%
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.noqcov.out | sort | uniq | wc -l
-60377
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.out | sort | uniq | wc -l
-50270
+DNA extraction was performed either by collecting chasmothecia or by acetone/cellulose peeling of the collected leaves. 
 
-Max size max cov with no qcov
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.noqcov.out | cut -f4,6 -d '_' | sort -nr -k1 -t '_' | head
-1808665_34.602153
-1608424_34.293083
-1288287_33.830732
-1091948_33.694573
-955146_34.596150
-853683_33.525800
-836785_33.523844
-683076_34.789354
-635506_33.547335
-615394_35.365817
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.noqcov.out | cut -f4,6 -d '_' | sort -nr -k2 -t '_' | head
-1115_2748.177291
-1823_2384.869159
-716_1629.723967
-660_1588.573770
-1586_1538.067119
-8080_956.982808
-6430_613.553885
-8477_588.458881
-8279_579.071866
-25515_568.281845
+DNA was send for sequencing at CEGAT and was sequenced with Illumina HiSeq?, 2x150bp.
 
-Max size max cov with qcov
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.out | cut -f4,6 -d '_' | sort -nr -k1 -t '_' | head
-67938_3.481033
-32314_2.513368
-30235_2.779976
-27808_3.879843
-27178_2.455684
-26140_3.466825
-25626_2.605605
-24414_2.285603
-24259_5.762092
-24227_3.433820
-bash-4.2$ cut -f1 scaffolds.parau.draft2.fasta.bact.blast.out | cut -f4,6 -d '_' | sort -nr -k2 -t '_' | head
-1115_2748.177291
-1823_2384.869159
-716_1629.723967
-660_1588.573770
-1586_1538.067119
-2611_294.599200
-511_186.402500
-1543_141.188547
-6042_104.212612
-697_93.957338
+This is for later:
+Pleochaeta shiraiana on Celtis sinensis
+collected: 13 December 2017 in Mie University Campus, Tsu-shi, Mie Prefecture, Japan
+(DNA extracts were prepared from powdery mildew on the same host plant individual on earlier dates)
+ 
+Please be careful with Celtis leaves as they can be co-infected with Erysiphe kusanoi besides P. shiraiana (but you can easily differentiate them by chasmothecial morphology and size).
+ 
+I think most probably most of the extracts in tubes contain very tiny amount of DNA (if any at all).
+ 
+## Assembly of the reads
+
+See original script I submitted. This below is indicative of that I run.
+
+```
+# First I run bfc to reduce the complexity. I kept only single ended reads, gzip results
+
+bfc -b 32 -k 25 -t 10 out.fastq.gz 2>| input.corr.fastq.gz.bfc.e | seqtk dropse - 2>| input.corr.fastq.gz.seqtk.e | pigz -c - -p 4 -2  1>| input.corr.fastq.gz 2>| input.corr.fastq.gz.pigz.e
+
+# This I run spades, we normally presplit the input  since it is faster.
+
+spades.py \
+-m 2000 \
+--tmp-dir $SLURM_TMP \
+-o spades3 \
+--only-assembler \
+-k 33,55,77,99,127 \
+--meta \
+-t 32 \
+-1 /global/projectb/scratch/aclum/metagenomes/benchmarking/bfc_params/mock/split/reads1.fasta \
+-2 /global/projectb/scratch/aclum/metagenomes/benchmarking/bfc_params/mock/split/reads2.fasta
+
+```
+
+At the end you get 658405 contigs, Total 481 MB, Max 1,8 MB, Min 112bp , N50 of 1,1kb. Not good, but ok.
+
+After removing contigs less than 500bp you get 159829, Total 316 MB, Max 1,8 MB, Min 501bp, N50 of 4,1kb. So we remove a lot of the small contigs with not so much impact in the total sequence content. The small ones are not useful for the downstream analysis anyway.
+
+Ploting contig size and coverage shows that there no correlation, but that there is a population of contigs ~30x coverage and another with less than 2x. This 30x contigs are mostly Parauncinula, which is nice.
+
+## Cleaning up bacterial contamination
+
+Since the sample is metagenomic, it makes sense to remove as much bacterial contigs as possible. I blasted the contigs to 3837 bacterial genomes that associated with plants which can be found here (http://labs.bio.unc.edu/Dangl/Resources/gfobap_website/index.html , see also Asaf Levy Nat. Genetics paper). 
+
+For the blasting I used:
+```
+/home/lf216591/utils/ncbi-blast-2.5.0+/bin/blastn \
+-query draft_2_meta/scaffolds.draft2.500bp.fasta \
+-db bact_genomes/genomes_fna.fa \
+-max_hsps 1 \
+-max_target_seqs 1 \
+-evalue 10e-5 \
+-outfmt 6 \
+-qcov_hsp_perc 25 \
+-num_threads 12 > scaffolds.parau.draft2.fasta.bact.blast.out
+```
+I also used no qcov filtering, but the qcov can help in keeping contigs with very short hits to bacteria. Results are here:
+
+Stats of removed sequences | With Qcov | No Qcov
+----| ----| ----|
+Total number | 50270 | 60377
+Total length | 64098655 | 129098971
+Average length | 1275.09 | 2138.21
+Average coverage | 1.30794 | 1.42922
+Max size | 67938 | 1808665
+Max cov | 2748.177291 | 2748.177291
+
+The cleaned-up assembly is:
+
