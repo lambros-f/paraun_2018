@@ -120,14 +120,9 @@ n95    |     15,552
 
 There quite some loss of contigs but not as much sequence.
 
-To verify if this is dataset is meaningful I run BUSCO on the predicted proteome after a MAKER annotation.
+To verify if this is dataset is meaningful I run BUSCO on the predicted proteome after a MAKER annotation. The MAKER annotation was generated with the Bgh pipeline.
 
 After the annotation I also changed the headers of the fasta and gff to PARAU_XXXXX . These files are: paraud2.maker.gff,paraud2.maker.prots.fa etc and correspond to the scaffolds.draft2.500bp.nobact.d20up.fa assembly.
-
-
-
-
-
 
 C:95.4%,S:33.9%,D:61.5%,,F:1.7%,M:2.9%,n:1438
 
@@ -155,9 +150,11 @@ Number|Category
 
 In order to reduce the dataset and exclude the other fungal genomes I would like to pull out only the ones that have hits to the Leotiomycetes over the majority of the contigs.
 
-Therefore I blastp the predicted proteome of these contigs to the nr. There is a small change to the typical blastp command since I want to get the species name for each of the hits.
+Therefore I blastp the predicted proteome of these contigs to the nr. There is a small change to the typical blastp command since I want to get the species name for each of the hits. You also have to make a alias/link to the fungal part of the nr.
 
 ```
+blastdb_aliastool -gilist refseq_fungi_prot_db -db /hpcwork/rwth0146/db/nr -out refseq_fungi_prot_db_db -title refseq_fungi_prot_db
+
 blastp \
 -query paraud2.maker.prots.fa \
 -db refseq_fungi_prot_db_db  \
@@ -183,3 +180,112 @@ PARAU_09990	gi|1011058802|ref|YP_009240970.1|	68.54	267	32	3	139	353	1	267	2e-10
 PARAU_09990	gi|1236517182|ref|YP_009412632.1|	66.42	268	38	3	139	354	1	268	6e-106	Imshaugia aleurites	172621	324
 ```
 
+Once this is over (~ couple of days), I need to parse the results. Assuming that most of the hits in a correctly assembled contig will come from a single species, I want to get the first, second hit and their frequency along the hits on this contig.
+
+```
+#make_blastp_results_table.sh
+rm hits.per_contigs.txt
+rm res.per_contigs.txt
+echo 'Contig Num_Genes Num_Blastp_hits 1st_Frq_hit 2nd_Frq_hit 1st_Frq_count 2nd_Frq_count 1st_Frq_% 2nd_Frq_%' > res.per_contigs.txt
+for contig in `cat contig.lst`;do
+#echo $contig
+grep $contig paraud2.maker.gff | grep -P 'gene\t' | grep -o PARAU_..... | sort | uniq > $contig.genes.lst
+
+	for gene in `cat $contig.genes.lst`;do
+#	echo $gene
+#	genehit1=$(grep $gene paraud2.maker.prots.fa.nr.REFSEQFUNGAL.blastp.out | head -n 1 | cut -f1 )
+	genehit2=$(grep $gene paraud2.maker.prots.fa.nr.REFSEQFUNGAL.blastp.out | sort -nrk3 |  head -n 1 |cut -f12 )
+		if [ -z "$genehit2" ]
+		then genehit2="N/A"
+		fi
+	echo $contig"	"$gene"	"$genehit2 >> hits.per_contigs.txt
+	done
+
+#echo 'done'
+numgenespc=$(wc -l $contig.genes.lst|cut -f1 -d ' ' )
+numhitspc=$(grep $contig hits.per_contigs.txt |grep PARAU | grep -v 'N/A'| wc -l | cut -f1 -d ' ')
+fsthitN=$(grep $contig hits.per_contigs.txt | grep PARAU | cut -f3 | sort | uniq -c | sort -nrk1 | sed 's/^ *//'|head -n 1 |cut -f1 -d ' ')
+fsthitID=$(grep $contig hits.per_contigs.txt| grep PARAU | cut -f3 | sort | uniq -c | sort -nrk1 | sed 's/^ *//'|head -n 1 |cut -f2 -d ' ')
+sndhitN=$(grep $contig hits.per_contigs.txt | grep PARAU |grep -v 'N/A'| cut -f3 | sort | uniq -c | sort -nrk1 | sed 's/^ *//'|head -n 2 | tail -n 1 | cut -f1 -d ' ')
+sndhitID=$(grep $contig hits.per_contigs.txt| grep PARAU |grep -v 'N/A'| cut -f3 | sort | uniq -c | sort -nrk1 | sed 's/^ *//'|head -n 2 | tail -n 1 | cut -f2 -d ' ')
+
+perc_fst=$(echo $fsthitN/$numgenespc | bc -l)
+perc_snd=$(echo $sndhitN/$numgenespc | bc -l)
+echo $contig' '$numgenespc' '$numhitspc' '$fsthitID' '$sndhitID' '$fsthitN' '$sndhitN' '$perc_fst' '$perc_snd >> res.per_contigs.txt
+
+done
+
+#High confidence contigs
+
+## here it pulls out the Leotiomycetes species from frequent_species.orders.leot.lst
+
+awk 'NR==FNR{a[$1];next}$4 in a' frequent_species.orders.leot.lst res.per_contigs.txt >1 && awk 'NR==FNR{a[$1];next}$5 in a' frequent_species.orders.leot.lst 1 |column -t > res.per_contigs.high_confidence.txt && rm 1
+
+grep -f res.per_contigs.high_confidence.lst paraud2.maker.gff | grep -P 'gene\t' | grep -o 'PARAU_.....' | sort | uniq > res.per_contigs.high_confidence.gene.lst
+
+sh get_seqs.sh res.per_contigs.high_confidence.gene.lst paraud2.maker.prots.fa res.per_contigs.high_confidence.gene.lst.fa
+
+#Low confidence/Chimeric contigs
+
+
+
+
+grep -f frequent_species.orders.leot.lst res.per_contigs.txt |  awk '{if ($8 + $9 > .5) print }' | column -t | sort -nrk2 | grep -v  'N/A' > res.per_contigs.high_confidence.txt
+cut -d ' '  -f1 res.per_contigs.high_confidence.txt  > res.per_contigs.high_confidence.lst
+
+
+#stats
+grep -f frequent_species.orders.leot.lst res.per_contigs.txt |  awk '{if ($8 + $9 > .5) print }' | grep -v  'N/A' | awk 'FS="_"{num+=$4}END{print num}'
+grep -f frequent_species.orders.leot.lst res.per_contigs.txt |  \
+awk '{if ($8 + $9 > .5) print }' | grep -v  'N/A' | cut -f2 -d ' ' | awk '{num+=$1}END{print num}'
+```
+
+This prints a table like this (see res.per_contigs.txt) :
+
+Contig |Num_Genes |Num_Blastp_hits |1st_Frq_hit |2nd_Frq_hit |1st_Frq_count |2nd_Frq_count |1st_Frq_% |2nd_Frq_%
+---|---|---|---|---|---|---|---|
+NODE_1000_length_27779_cov_37.567696 |3 |3 |Phialocephala |Sclerotinia |2 |1 |.66666666666666666666 |.33333333333333333333
+NODE_1001_length_27771_cov_29.788901 |4 |4 |Phialocephala |Sclerotinia |2 |1 |.50000000000000000000 |.25000000000000000000
+NODE_1030_length_26970_cov_36.415205 |4 |4 |Phialocephala |Marssonina |1 |1 |.25000000000000000000 |.25000000000000000000
+
+Based on the lineages provided by TaxonomyDB (lineages-2018-06-13.csv) you can find out if a genus belongs to the leotiomycetes or not.
+
+But also the sequences for the high confidence contigs (first and and second most frequent hit is Leotiomycetes) and everything else as low confidence contigs. This is a quite strict filter but you can avoid potentially chimeric contigs.
+
+The high and low confidence assemblies look like this:
+
+
+Scaffold Stats | High confidence | Low confidence
+----| ---- | ----
+Seqs  | 495|107
+Min    | 966| 3204   
+1st Qu.| 17297|    
+Median | 36067|
+Mean   | 56598|
+3rd Qu.| 74488|
+Max    | 354858| 1808665
+Total  | 28016241| 10976294
+n50    | 98897|
+n90    | 25733|
+n95    | 17861|
+
+The rest of the contigs have no fungal hits at all so they are excluded. Of course this is also removing other contigs where genes were not predicted by maker.
+
+The BUSCO results look better, in a sense that the duplicated BUSCOs are significantly reduced:
+
+Number|Category
+---|---
+1305|Complete BUSCOs
+1172|Complete and single-copy BUSCOs
+133|Complete and duplicated BUSCOs
+57|Fragmented BUSCOs
+76|Missing BUSCOs
+1438|Total BUSCO groups searched
+
+The completeness is 90% vs 97% of Bgh, which I would say is as high as you can go with this dataset.
+
+So now the final assembly is "res.per_contigs.high_confidence.lst.fa", and based on this result I think we can move on with the analysis.
+
+
+
+## Analysis
