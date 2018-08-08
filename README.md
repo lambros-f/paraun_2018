@@ -242,8 +242,8 @@ awk '{if ($8 + $9 > .5) print }' | grep -v  'N/A' | cut -f2 -d ' ' | awk '{num+=
 
 This prints a table like this (see res.per_contigs.txt) :
 
-Contig |Num_Genes |Num_Blastp_hits |1st_Frq_hit |2nd_Frq_hit |1st_Frq_count |2nd_Frq_count |1st_Frq_% |2nd_Frq_%
----|---|---|---|---|---|---|---|
+Contig|Num_Genes|Num_Blastp_hits|1st_Frq_hit|2nd_Frq_hit|1st_Frq_count|2nd_Frq_count|1st_Frq_%|2nd_Frq_%
+---|---|---|---|---|---|---|---|---|
 NODE_1000_length_27779_cov_37.567696 |3 |3 |Phialocephala |Sclerotinia |2 |1 |.66666666666666666666 |.33333333333333333333
 NODE_1001_length_27771_cov_29.788901 |4 |4 |Phialocephala |Sclerotinia |2 |1 |.50000000000000000000 |.25000000000000000000
 NODE_1030_length_26970_cov_36.415205 |4 |4 |Phialocephala |Marssonina |1 |1 |.25000000000000000000 |.25000000000000000000
