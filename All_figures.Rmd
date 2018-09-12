@@ -1,0 +1,284 @@
+---
+title: "Parauncinula figures genome"
+output: html_notebook
+---
+
+# Libraries, working directory
+```{R}
+setwd("~/Documents/GitHub/jap_pm_2018")
+devtools::install_github('cttobin/ggthemr')
+options(scipen=999)
+library(devtools)
+library(ggplot2)
+library(ggridges)
+library(ggthemr)
+library(gplots)
+library(reshape2)
+library(reshape)
+
+```
+
+#### Results figures
+
+#### Figure 1 - Gene density/Genome expansion of Bgh 
+
+##### Figure 1C - 5'/3' Intergenic distance plot
+```{R}
+ds <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/down.txt', sep = '\t', header = F)
+us <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/up.txt', sep = '\t', header = F)
+sps <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/m.res.per_contigs.high_confidence.gene.lst.fa.tmhmm.notmm', sep = '\t', header = F)
+
+ds <- cbind(ds,'Downstream')
+us <- cbind(us,'Upstream')
+all <- merge(ds,us, by = 'V4')
+
+colnames(all) <- c('gene1','scaffold1u','start1u','stop1u','scaffold2u','start2u','stop2u','gene2u','distance_size_up','ds','scaffold1','start1','stop1','scaffold2','start2','stop2','gene2','distance_size_down','us')
+
+all$distance_size_up <- abs(all$distance_size_up)
+all$distance_size_down <- abs(all$distance_size_down)
+
+all$group <- "Non SP"
+all$group[all$gene1 %in% sps$V1] <- "SP"
+
+
+
+ggplot(all, aes(x= distance_size_up,y=distance_size_down)) +
+  #geom_hex()+
+  stat_bin2d(binwidth=c(0.06, 0.06))+
+  scale_fill_distiller(palette = "Spectral", name="Gene\ncount")+
+  scale_x_log10()+
+  scale_y_log10()+
+  ylab("5' prime intergenic length (bp)") +
+  xlab("3' prime intergenic length (bp)") +
+  geom_point(data=subset(all, group == "SP"), color = 'black', fill = 'white',shape = 21,alpha = 0.8, size = 2)+
+  theme_minimal()
+
+```
+
+##### Figure 1D - TE distance from start/stop
+
+In bash, remove sub-categorization from TEs, for example make Tad1-12 to Tad1 in order to summarize better the results
+Also remove the entries that are at the end of scaffolds and denoted as '.', and the element HaTad1 since it is not very frequent in P. polyspora and generates an akward gap in the figure (in the case of upstread distances for SP)
+
+```{bash} 
+sed  -e 's/Gypsy4-.*       /Gypsy  /g' -e 's/Copia-.*        /Copia  /g' -e 's/Gypsy-.*      /Gypsy  /g' -e 's/HaTad1-.*     /HaTad1 /g' -e 's/Mariner-.*    /Mariner        /g' -e 's/Mariner5_AO.*        /Mariner       /g' -e 's/Tad1-.*       /Tad1   /g' down_te.txt | grep -v '       .       '  > down_te_fixed.txt
+sed  -e 's/Gypsy4-.*       /Gypsy  /g' -e 's/Copia-.*        /Copia  /g' -e 's/Gypsy-.*      /Gypsy  /g' -e 's/HaTad1-.*     /HaTad1 /g' -e 's/Mariner-.*    /Mariner        /g' -e 's/Mariner5_AO.*        /Mariner       /g' -e 's/Tad1-.*       /Tad1   /g' up_te.txt | | grep -v '       .       ' > up_te_fixed.txt
+```
+
+Plotting the figure
+
+```{R}
+dste <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/down_te_fixed-hatad1.txt', sep = '\t', header = F)
+uste <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/up_te_fixed-hatad1.txt', sep = '\t', header = F)
+sps <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/m.res.per_contigs.high_confidence.gene.lst.fa.tmhmm.notmm', sep = '\t', header = F)
+
+dste$group <- 'Downstream'
+uste$group <- 'Upstream'
+allte <- rbind(uste,dste)
+
+colnames(allte) <- c('scaffold1','start1','stop1','gene','scaffold2','start2','stop2','te_type','distance','group')
+
+allte$distance <- abs(allte$distance)
+
+allte$secr <- "Non SP"
+allte$secr[allte$gene %in% sps$V1] <- "SP"
+
+ggthemr('dust')
+ggplot(allte) +
+  geom_point(aes(x=te_type,y=distance),alpha = 0.04, position = 'jitter')+
+  geom_violin(aes(x=te_type,y=distance, fill=te_type))+
+  facet_wrap(~group+secr)+
+  scale_fill_brewer(palette = "Paired", name="Types")+
+ # theme_minimal()  +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 9, hjust = 1), plot.title = element_text(hjust=0.5)) +
+  scale_y_log10()+
+  ylab("Distance for start/stop codon (bp)") +
+  xlab("Repetitive element type (bp)") 
+```
+
+
+##### Figure 1B - Intergenic distance in Bgh and Parauncinula 
+
+Make the table for Parauncinula:
+```{R}
+ds <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/down.txt', sep = '\t', header = F)
+us <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/up.txt', sep = '\t', header = F)
+sps <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/m.res.per_contigs.high_confidence.gene.lst.fa.tmhmm.notmm', sep = '\t', header = F)
+
+ds$group <- 'Downstream'
+us$group <- 'Upstream'
+parau_interg <- rbind(us,ds)
+
+colnames(parau_interg) <- c('scaffold1','start1','stop1','gene','scaffold2','start2','stop2','gene2','distance','group')
+
+parau_interg$distance <- abs(parau_interg$distance)
+
+parau_interg$secr <- "Non SP"
+parau_interg$secr[parau_interg$gene %in% sps$V1] <- "SP"
+parau_interg_final <- cbind.data.frame(parau_interg$gene,parau_interg$distance,parau_interg$group,parau_interg$secr)
+colnames(parau_interg_final) <- c('gene','distance','group','secreted')
+parau_interg_final$species <- 'Parauncinula polyspora'
+```
+
+Make the table for Bgh:
+
+```{R}
+bgh_interg <- read.csv('/Users/lfrantzeskakis/Documents/GitHub/blumeria_2017/useful_files/intergenic_spaces.bed2R', sep = '\t', header = F)
+colnames(bgh_interg) <- c('Scaffold','Gene_start','Gene_end','Gene_name','Scaffold_inter','Intergen_start','Intergen_stop','UpDown')
+table_up <- subset.data.frame(bgh_interg, UpDown > 0)
+table_up$UpDown <- 'Upstream'
+table_up$distance <- abs(table_up$Intergen_start - table_up$Intergen_stop)
+table_up$secreted <- 'Non SP'
+
+table_down <- subset.data.frame(bgh_interg, UpDown < 0)
+table_down$UpDown <- 'Downstream'
+table_down$distance <- abs(table_down$Intergen_start - table_down$Intergen_stop)
+table_down$secreted <- 'Non SP'
+
+bgh_interg.2 <- rbind(table_up, table_down)
+bgh_interg_final <- cbind.data.frame(bgh_interg.2$Gene_name,bgh_interg.2$distance,bgh_interg.2$UpDown,bgh_interg.2$secreted)
+colnames(bgh_interg_final) <- c('gene','distance','group','secreted')
+bgh_interg_final$species <- 'Blumeria graminis fsp hordei'
+
+bghsps <- read.csv('/Users/lfrantzeskakis/Documents/GitHub/blumeria_2017/useful_files/cseps_805.lst', sep = '\t', header = F)
+
+bgh_interg_final$secreted <- as.character(bgh_interg_final$secreted)
+bgh_interg_final$secreted[bgh_interg_final$gene %in% bghsps$V1] <- "SP"
+
+data <- rbind(parau_interg_final,bgh_interg_final)
+```
+
+Plot:
+```{R}
+
+ggthemr('dust')
+ggplot(data)+
+  geom_violin(aes(y=distance,x=group))+
+  facet_wrap(~species+secreted, ncol = 4)+
+  scale_y_log10()+
+  ylab("Distance to the nearest gene (bp)") +
+  xlab("") 
+
+```
+
+
+#### Figure 2 - RIP 
+#### Figure 3 - CAZYmes, CAGs, PFAMS
+##### Figure 3A - CAGs
+##### Figure 3B - Cazymes
+
+Here I removed Pseudogymnoascus destructans from the plot since it is a animal pathogen so the comparison is a bit irrelevant.
+
+```{R}
+##CAZY
+
+
+caz <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_cazy/all_results_for_R_summarized_final.csv', sep = ',', header = F)
+colnames(caz) <- c('CAZyme','Count','Species')
+
+
+caz$Count <- as.numeric(caz$Count)
+ggthemr('dust')
+ggthemr('greyscale')
+
+
+
+ggplot(caz, aes(caz$Species,caz$CAZyme))+
+  geom_tile(aes(fill = caz$Count))+
+  geom_text(aes(label = caz$Count ))+
+  #scale_fill_continuous(name = "Gene count")+
+  scale_fill_gradient(low = "white", high = "red",name = "Gene count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 9, hjust = 1), plot.title = element_text(hjust=0.5))+
+  xlab('')+
+  ylab('CAZyme group')
+  
+caz.m <- acast(caz,CAZyme~Species, value.var = 'Count')
+
+
+
+heatmap.2(caz.m[,-13],
+          margins =c(35,5),
+          trace="none",
+          col = colorpanel(10, low = 'snow',mid = 'indianred', high = 'darkred'),
+          dendrogram="column",
+          denscol = 'black',
+          cexRow = 0.75,
+          cexCol = 1,
+          key = T,
+          key.title = '',
+          keysize = 1,
+          key.xlab = 'Count',
+          key.ylab = '',
+          density.info = 'none',
+          scale = 'none',
+          cellnote=caz.m,
+          notecol='black'
+                    )
+```
+
+
+##### Figure 3C - PFAMs
+
+Here I am ploting in a vertical plot the PFAMs that are more that 3fold more frequent in Parauncinula. There are more domains in the range of 0-3 fold but I am not putting them in the plot for space reasons. The data are in the supplementary tables if someone wants to have a look
+
+```{R}
+
+table_par <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/01_interpro_counts/pfam.parau.frequency.csv', sep = ' ', header = F)
+table_bgh <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/01_interpro_counts/pfam.bgh.frequency.csv', sep = ' ', header = F)
+colnames(table_par) <- c('PFAM','count_par','freq_par')
+colnames(table_bgh) <- c('PFAM','count_bgh','freq_bgh')
+
+
+table_j <- merge(table_par,table_bgh,by = 'PFAM',all = T)
+table_j[is.na(table_j)] <- 0
+table_j$fold <- table_j$freq_par/table_j$freq_bgh
+
+# subseting to > 2 fold
+
+table_j_sub <- subset(table_j, table_j$fold > 2 & table_j$fold < Inf )
+table_j_in <- subset(table_j, table_j$fold == Inf )
+
+write.csv(table_j_sub,'/Users/lfrantzeskakis/projects/03_jp_mildews/01_interpro_counts/table_j_sub.txt')
+## in bash: grep -f table_j_sub.txt.lst pfam.tsv | awk 'FS="\t" {print $5,$6}' | sort | uniq > table_j_sub.txt.lst.descr
+pfam.descr <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/01_interpro_counts/table_j_sub.txt.lst.descr', sep = '\t', header = F)
+colnames(pfam.descr) <- c('PFAM','description')
+table_j_sub_m <- merge(table_j_sub,pfam.descr, by = 'PFAM',all = T)
+
+ggplot(table_j_sub_m, aes(x=reorder(description,fold), y=fold)) +
+  geom_bar(stat='identity', fill = 'black') +
+  coord_flip()+
+  theme_minimal()
+
+
+# subseting to > 5 fold to make a more compact figure
+
+table_j_sub_m5 <- subset(table_j_sub_m, table_j_sub_m$fold > 3 )
+
+ggplot(table_j_sub_m5, aes(x=reorder(description,fold), y=fold)) +
+  geom_bar(stat='identity', fill = 'black') +
+  coord_flip()+
+  xlab('')+
+  ylab('Fold difference compared to Bgh')+
+  theme_minimal()
+```
+
+
+
+
+
+
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
