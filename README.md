@@ -24,7 +24,7 @@ I think most probably most of the extracts in tubes contain very tiny amount of 
 See original script I submitted. This below is indicative of that I run.
 
 ```
-# First I run bfc to reduce the complexity. I kept only single ended reads, gzip results
+# First I run bfc to reduce the complexity. I dropped single ended reads, gzip results
 
 bfc -b 32 -k 25 -t 10 out.fastq.gz 2>| input.corr.fastq.gz.bfc.e | seqtk dropse - 2>| input.corr.fastq.gz.seqtk.e | pigz -c - -p 4 -2  1>| input.corr.fastq.gz 2>| input.corr.fastq.gz.pigz.e
 
