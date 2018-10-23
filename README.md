@@ -28,7 +28,7 @@ See original script I submitted. This below is indicative of that I run.
 
 bfc -b 32 -k 25 -t 10 out.fastq.gz 2>| input.corr.fastq.gz.bfc.e | seqtk dropse - 2>| input.corr.fastq.gz.seqtk.e | pigz -c - -p 4 -2  1>| input.corr.fastq.gz 2>| input.corr.fastq.gz.pigz.e
 
-# This I run spades, we normally presplit the input  since it is faster.
+# This I run spades, presplit the input since it is faster.
 
 spades.py \
 -m 2000 \
