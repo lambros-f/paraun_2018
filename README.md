@@ -317,7 +317,7 @@ Output is in useful_files/02_Repeatmasker
 
 ### Secretome
 
-For the secretome SignalP v4.1 and TMHMM v2.0c, were used. The output from SignalP was passed to TMHMM to screen for transmembrane domains (tm) and then proteins with tm were removed. The script used was:
+For the secretome SignalP v4.1 and TMHMM v2.0c, were used. The output from SignalP was passed to TMHMM to screen for transmembrane domains (tm) and then proteins with tm were removed. The script used iteratively for all proteomes analysed was:
 
 ```
 file1=res.per_contigs.high_confidence.gene.lst.fa
@@ -336,6 +336,58 @@ sh get_seqs.sh m.$file1.tmhmm.notmm m.$file1 m.$file1.tmhmm.notmm.fa
 
 The get_seqs.sh script is a simple bash script to get sequences from a list of headers. Copied it in various_scripts.
 
+The putatively secreted proteins of P. polyspora with their PFAM annotations (if any) are in the useful_files/03_secretome
+
+### Functional annotation
+
+For the functional annotation I used InterProScan v5.19-58.0, and was called as
+
+```
+interproscan.sh -appl Pfam -i res.per_contigs.high_confidence.gene.lst.fa -dp -b pfam
+````
+
+The annotations based on PFAM and SUPERFAMILY databases are in useful_files/superfam_pfam_annot.tsv
+
+### RIPCAL & OcculterCut
+
+### CAZymes
+
+The CAZyme analysis was based on the dbCAN v6 models. The script used to do a hmm search with HMMER 3.1b2 was:
+
+```
+for genome in `ls ../03_Orthofinder/03_high_confidence_contigs/*.faa`;do
+echo $genome
+/home/lf216591/utils/hmmer-3.1b2-linux-intel-x86_64/bin/hmmscan --cpu 12 --domtblout $genome.domtblout ~/utils/dbCAN/dbCAN-fam-HMMs.txt.v6 $genome > $genome.hmmout
+echo 'Step 1 : ok'
+sh /home/lf216591/utils/dbCAN/hmmscan-parser.sh $genome.domtblout | column -t | sort -k1 | sed 's/\.hmm//g' | tee $genome.hmmresults
+cut -f1 -d ' ' test2  | sort | uniq -c | awk '{print $2,$1,"$genome"}' >> all_results_for_R.csv
+mv $genome.domtblout $genome.hmmresults $genome.hmmout ./
+echo 'Step 2 : ok'
+done
+
+for genome in `ls ../03_Orthofinder/03_high_confidence_contigs/*.fa`;do
+echo $genome
+/home/lf216591/utils/hmmer-3.1b2-linux-intel-x86_64/bin/hmmscan --cpu 12 --domtblout $genome.domtblout ~/utils/dbCAN/dbCAN-fam-HMMs.txt.v6 $genome > $genome.hmmout
+sh /home/lf216591/utils/dbCAN/hmmscan-parser.sh $genome.domtblout | column -t | sort -k1 | sed 's/\.hmm//g' > $genome.hmmresults
+cut -f1 -d ' ' test2  | sort | uniq -c | awk '{print $2,$1,"$genome"}' >> all_results_for_R.csv
+done
+
+mv ../03_Orthofinder/03_high_confidence_contigs/all_results_for_R.csv ./
+```
+
+### MCSCANX
+
+For the duplicate gene search I used MCSCANX v2 (http://chibba.pgml.uga.edu/mcscan2/), after generating a blast output (-output 6) with a 80% identity cutoff.
+
+```
+blastp -query ../../00_high_conf_dataset/res.per_contigs.high_confidence.gene.lst.fa -subject ../../00_high_conf_dataset/res.per_contigs.high_confidence.gene.lst.fa -evalue 1e-10 -outfmt 6 | tee parau.blast_all
+
+awk '{if ($3 > 80) print}' parau.blast_all > parau.blast
+```
+
+The two files: parau.blast parau.gff in useful_files/ can be used to re-run the analysis. The parau.gene_type is the output.
+
+### RNAse-like protein phylogeny
 
 
 
