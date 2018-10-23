@@ -1,0 +1,55 @@
+Sender: LSF System <lsfadmin@linuxbmc0438>
+Subject: Job 44729317: <iqtree-fast> in cluster <rcc> Exited
+
+Job <iqtree-fast> was submitted from host <cluster> by user <lf216591> in cluster <rcc> at Thu Sep 13 01:35:09 2018
+Job was executed on host(s) <12*linuxbmc0438>, in queue <normal>, as user <lf216591> in cluster <rcc> at Thu Sep 13 01:35:14 2018
+                            <12*linuxbmc0439>
+                            <8*linuxbmc0441>
+</home/lf216591> was used as the home directory.
+</work/lf216591/07_pleo_para_annot/01_parauncinula/09_rnases/04_rnase_tree> was used as the working directory.
+Started at Thu Sep 13 01:35:14 2018
+Terminated at Thu Sep 13 01:35:27 2018
+Results reported at Thu Sep 13 01:35:27 2018
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+
+#BSUB -J iqtree-fast
+#BSUB -u lamprinos.frantzeskakis@rwth-aachen.de
+#BSUB -o job.%J.%I
+#BSUB -W 48:00
+#BSUB -M 1800
+#BSUB -R "select[hpcwork]"
+#BSUB -n 32
+#BSUB -a openmpi
+
+source /home/lf216591/.bash_profile
+
+cd /work/lf216591/07_pleo_para_annot/01_parauncinula/09_rnases/04_rnase_tree
+
+/home/lf216591/utils/iqtree-1.6.beta4-Linux/bin/iqtree -m MF  -bb 1000 -s all_secreted_with_no_pfam.fa.aln -nt 32 
+
+
+------------------------------------------------------------
+
+Exited with exit code 2.
+
+Resource usage summary:
+
+    CPU time :                                   10.00 sec.
+    Max Memory :                                 318 MB
+    Average Memory :                             47.00 MB
+    Total Requested Memory :                     57600.00 MB
+    Delta Memory :                               57282.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                4
+    Run time :                                   13 sec.
+    Turnaround time :                            18 sec.
+
+The output (if any) follows:
+
+ModelFinder only cannot be combined with bootstrap analysis

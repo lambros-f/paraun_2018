@@ -1,0 +1,60 @@
+==================================================
+file name: bgh_dh14_v4.fa           
+sequences:           318
+total length:  124489486 bp  (123802382 bp excl N/X-runs)
+GC level:         43.72 %
+bases masked:   92797919 bp ( 74.96 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+Retroelements        73333     78674016 bp   63.55 %
+   SINEs:              879       197598 bp    0.16 %
+   Penelope              0            0 bp    0.00 %
+   LINEs:            27808     37737420 bp   30.48 %
+    CRE/SLACS            0            0 bp    0.00 %
+     L2/CR1/Rex          0            0 bp    0.00 %
+     R1/LOA/Jockey       0            0 bp    0.00 %
+     R2/R4/NeSL          0            0 bp    0.00 %
+     RTE/Bov-B           0            0 bp    0.00 %
+     L1/CIN4             0            0 bp    0.00 %
+   LTR elements:     44646     40738998 bp   32.91 %
+     BEL/Pao             0            0 bp    0.00 %
+     Ty1/Copia       20342     19240263 bp   15.54 %
+     Gypsy/DIRS1     20437     20344874 bp   16.43 %
+       Retroviral        0            0 bp    0.00 %
+
+DNA transposons       1296       680437 bp    0.55 %
+   hobo-Activator        2          107 bp    0.00 %
+   Tc1-IS630-Pogo     1279       679438 bp    0.55 %
+   En-Spm                0            0 bp    0.00 %
+   MuDR-IS905            0            0 bp    0.00 %
+   PiggyBac              1           53 bp    0.00 %
+   Tourist/Harbinger     2          118 bp    0.00 %
+   Other (Mirage,        0            0 bp    0.00 %
+    P-element, Transib)
+
+Rolling-circles          0            0 bp    0.00 %
+
+Unclassified:        25348     13096488 bp   10.58 %
+
+Total interspersed repeats:    92450941 bp   74.68 %
+
+
+Small RNA:              20        40687 bp    0.03 %
+
+Satellites:             96        37772 bp    0.03 %
+Simple repeats:       4218       261501 bp    0.21 %
+Low complexity:        259        13164 bp    0.01 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+  Runs of >=20 X/Ns in query were excluded in % calcs
+
+
+The query species was assumed to be fungi         
+RepeatMasker version open-4.0.6 , default mode
+                                   
+run with rmblastn version 2.2.27+
+RepBase Update 20150807, RM database version 20150807

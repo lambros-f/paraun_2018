@@ -1,0 +1,64 @@
+Sender: LSF System <lsfadmin@linuxbmc0436>
+Subject: Job 44729335: <iqtree-fast> in cluster <rcc> Exited
+
+Job <iqtree-fast> was submitted from host <cluster> by user <lf216591> in cluster <rcc> at Thu Sep 13 01:36:27 2018
+Job was executed on host(s) <12*linuxbmc0436>, in queue <normal>, as user <lf216591> in cluster <rcc> at Thu Sep 13 01:36:31 2018
+                            <12*linuxbmc0438>
+                            <8*linuxbmc0441>
+</home/lf216591> was used as the home directory.
+</work/lf216591/07_pleo_para_annot/01_parauncinula/09_rnases/04_rnase_tree> was used as the working directory.
+Started at Thu Sep 13 01:36:31 2018
+Terminated at Thu Sep 13 01:36:44 2018
+Results reported at Thu Sep 13 01:36:44 2018
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+
+#BSUB -J iqtree-fast
+#BSUB -u lamprinos.frantzeskakis@rwth-aachen.de
+#BSUB -o job.%J.%I
+#BSUB -W 48:00
+#BSUB -M 1800
+#BSUB -R "select[hpcwork]"
+#BSUB -n 32
+#BSUB -a openmpi
+
+source /home/lf216591/.bash_profile
+
+cd /work/lf216591/07_pleo_para_annot/01_parauncinula/09_rnases/04_rnase_tree
+
+/home/lf216591/utils/iqtree-1.6.beta4-Linux/bin/iqtree -alrt 1000 -bb 1000 -s all_secreted_with_no_pfam.fa.aln -nt 32 
+
+
+------------------------------------------------------------
+
+Exited with exit code 2.
+
+Resource usage summary:
+
+    CPU time :                                   10.00 sec.
+    Max Memory :                                 319 MB
+    Average Memory :                             52.00 MB
+    Total Requested Memory :                     57600.00 MB
+    Delta Memory :                               57281.00 MB
+    Max Swap :                                   -
+    Max Processes :                              4
+    Max Threads :                                4
+    Run time :                                   12 sec.
+    Turnaround time :                            17 sec.
+
+The output (if any) follows:
+
+IQ-TREE multicore version 1.6.beta4 for Linux 64-bit built Jun 21 2017
+Developed by Bui Quang Minh, Nguyen Lam Tung, Olga Chernomor,
+Heiko Schmidt, Dominik Schrempf, Michael Woodhams.
+
+Host:    linuxbmc0436.rz.RWTH-Aachen.DE (SSE4.2, 23 GB RAM)
+Command: /home/lf216591/utils/iqtree-1.6.beta4-Linux/bin/iqtree -alrt 1000 -bb 1000 -s all_secreted_with_no_pfam.fa.aln -nt 32
+Seed:    717363 (Using SPRNG - Scalable Parallel Random Number Generator)
+Time:    Thu Sep 13 01:36:42 2018
+Kernel:  SSE2 - 32 threads (24 CPU cores detected)
+ERROR: You have specified more threads than CPU cores available
