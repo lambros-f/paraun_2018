@@ -389,5 +389,42 @@ The two files: parau.blast parau.gff in useful_files/ can be used to re-run the 
 
 ### RNAse-like protein phylogeny
 
+I did this work using the proteomes from Bgh DH14, E. necator, E. pulchtra, G. cichoracearum, O. neolycopersici and P. polyspora. 
+
+First, I annotated all the secretomes defined as previously with Interpro, also as previously. Then I excluded all the proteins that had a PFAM annotation with a simple script.
+
+```
+for filez in `ls *.fa`;do
+grep '>' $filez | tr -d '>' | sed -e 's/ ; MatureChain:.*//g' -e 's/\s.*//g' > $filez.prot.lst
+grep -f $filez.prot.lst $filez.tsv | grep Pfam | cut -f1 | sort | uniq > $filez.havepfam.lst
+grep -v -f $filez.havepfam.lst $filez.prot.lst > $filez.nopfam.lst
+sh get_seqs.sh $filez.nopfam.lst $filez $filez.nopfam.lst.fa
+done
+```
+
+Then I aligned using MAFFT v7.310, with
+
+```
+mafft --amino --6merpair --maxiterate 1000 --thread 12 all_secreted_with_new_abini_nopfam.fa > all_secreted_with_new_abini_nopfam.fa.aln
+```
+
+Alignment and the protein sequences used are in useful_files/04_rnaselike_phylogeny
+
+Then used FastTree version 2.1.10 SSE3 to generate the ML tree
+
+```
+FastTree all_secreted_with_new_abini_nopfam.fa.aln > all_secreted_with_new_abini_nopfam.fa.aln.fsttree
+```
+
+Output from FastTree with the settings:
+```
+Alignment: all_secreted_with_new_abini_nopfam.fa.aln
+Amino acid distances: BLOSUM45 Joins: balanced Support: SH-like 1000
+Search: Normal +NNI +SPR (2 rounds range 10) +ML-NNI opt-each=1
+TopHits: 1.00*sqrtN close=default refresh=0.80
+ML Model: Jones-Taylor-Thorton, CAT approximation with 20 rate categories
+```
+
+A similar tree was generated with IQTree 1.6.beta4 (although the method is more computationally consuming), but I didn't include ~10 Parauncinula abinitio predicted RNAses. The files for this tree are in useful_files/03_secretome/iqtree
 
 
