@@ -1,13 +1,27 @@
 ---
-title: "Parauncinula figures genome"
-output: html_notebook
+title: "R Markdown for the P. polyspora genome analysis"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
 ---
 
-# Libraries, working directory
+Here I have deposited the scripts used for the analysis of the P. polyspora genome. For comments and questions please email lfrantzeskakis(at)lbl.gov
+
+-Lamprinos
+
+#### Libraries, working directory
 ```{R}
+#devtools::install_github("guiastrennec/ggplus")
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("ComplexHeatmap")
+# biocLite("ggtree")
+
 setwd("~/Documents/GitHub/jap_pm_2018")
 devtools::install_github('cttobin/ggthemr')
 options(scipen=999)
+
 library(devtools)
 library(ggplot2)
 library(ggridges)
@@ -15,11 +29,14 @@ library(ggthemr)
 library(gplots)
 library(reshape2)
 library(reshape)
+library(ComplexHeatmap)
+library(tidyverse)
+library(ggtree)
+library(ggplus)
 
 ```
 
-#### Results figures
-
+### Results figures
 #### Figure 1 - Gene density/Genome expansion of Bgh 
 
 ##### Figure 1C - 5'/3' Intergenic distance plot
@@ -61,8 +78,8 @@ In bash, remove sub-categorization from TEs, for example make Tad1-12 to Tad1 in
 Also remove the entries that are at the end of scaffolds and denoted as '.', and the element HaTad1 since it is not very frequent in P. polyspora and generates an akward gap in the figure (in the case of upstread distances for SP)
 
 ```{bash} 
-sed  -e 's/Gypsy4-.*       /Gypsy  /g' -e 's/Copia-.*        /Copia  /g' -e 's/Gypsy-.*      /Gypsy  /g' -e 's/HaTad1-.*     /HaTad1 /g' -e 's/Mariner-.*    /Mariner        /g' -e 's/Mariner5_AO.*        /Mariner       /g' -e 's/Tad1-.*       /Tad1   /g' down_te.txt | grep -v '       .       '  > down_te_fixed.txt
-sed  -e 's/Gypsy4-.*       /Gypsy  /g' -e 's/Copia-.*        /Copia  /g' -e 's/Gypsy-.*      /Gypsy  /g' -e 's/HaTad1-.*     /HaTad1 /g' -e 's/Mariner-.*    /Mariner        /g' -e 's/Mariner5_AO.*        /Mariner       /g' -e 's/Tad1-.*       /Tad1   /g' up_te.txt | | grep -v '       .       ' > up_te_fixed.txt
+#sed  -e 's/Gypsy4-.*       /Gypsy  /g' -e 's/Copia-.*        /Copia  /g' -e 's/Gypsy-.*      /Gypsy  /g' -e 's/HaTad1-.*     /HaTad1 /g' -e 's/Mariner-.*    /Mariner        /g' -e 's/Mariner5_AO.*        /Mariner       /g' -e 's/Tad1-.*       /Tad1   /g' down_te.txt | grep -v '       .       '  > down_te_fixed.txt
+#sed  -e 's/Gypsy4-.*       /Gypsy  /g' -e 's/Copia-.*        /Copia  /g' -e 's/Gypsy-.*      /Gypsy  /g' -e 's/HaTad1-.*     /HaTad1 /g' -e 's/Mariner-.*    /Mariner        /g' -e 's/Mariner5_AO.*        /Mariner       /g' -e 's/Tad1-.*       /Tad1   /g' up_te.txt | | grep -v '       .       ' > up_te_fixed.txt
 ```
 
 Plotting the figure
@@ -162,39 +179,256 @@ ggplot(data)+
 ```
 
 
-#### Figure 2 - RIP 
+#### Figure 2 - RIP and suppl. figure with GC content
+
+##### Figure 2A - Bimodal distribution of GC/AT from the results coming from Occultercut
+```{R}
+
+ggthemr('dust')
+#Get the data
+
+ocutest.all <-''
+
+for (filez in list.files('/Users/lfrantzeskakis/projects/03_jp_mildews/07_occultercut/', pattern = '*.compositionGC.txt')){
+  filez <- paste('/Users/lfrantzeskakis/projects/03_jp_mildews/07_occultercut/',filez,sep = '')
+  ocutest <- read.csv(filez, header = F, sep = ' ')
+  ocutest$id <- filez
+  ocutest.all <- rbind(ocutest.all,ocutest)
+}
+
+#Cleanup the table
+ocutest.all$id <- sub('/Users/lfrantzeskakis/projects/03_jp_mildews/07_occultercut/','',ocutest.all$id, fixed = T)
+ocutest.all$id <- sub('.compositionGC.txt','',ocutest.all$id, fixed = T)
+ocutest.all$id <- sub('_GC.*','',ocutest.all$id )
+ocutest.all$id <- sub('_',' ',ocutest.all$id )
+ocutest.all$id <- sub('.fa','',ocutest.all$id )
+ocutest.all <- ocutest.all[!apply(ocutest.all == "", 1, all),]
+colnames(ocutest.all) <- c('GC','Portion','Species')
+ocutest.all$GC <- as.numeric(ocutest.all$GC)
+ocutest.all$Portion <- as.numeric(ocutest.all$Portion)
+
+#Plot suppl. figure with all measurements
+
+ggplot(ocutest.all)+
+  geom_polygon(aes(GC,Portion), fill = 'tomato')+
+  facet_wrap(~Species, scales = 'free_y')+
+  theme_minimal()+
+  ylab(label = 'Portion of the genome (%)')+
+  xlab(label = 'GC content (%)')
+
+#Make a simpler figure for the main figure. Here I picked two cases that seem to have AT isochores, Bgh the reference genome for powdery mildews and P. polyspora
+
+ocutest.all.s1 <- subset.data.frame(ocutest.all, Species == 'res.per contigs.high_confidence.lst')
+ocutest.all.s2 <- subset.data.frame(ocutest.all, Species == 'bgh dh14_v4')
+ocutest.all.s3 <- subset.data.frame(ocutest.all, Species == 'rhynchosporium commune')
+ocutest.all.s4 <- subset.data.frame(ocutest.all, Species == 'marssonina brunnea')
+
+ocutest.all.s <- rbind(ocutest.all.s1,ocutest.all.s2,ocutest.all.s3,ocutest.all.s4)
+ocutest.all.s$Species <- gsub('bgh dh14_v4','Blumeria graminis f.sp. hordei',ocutest.all.s$Species )
+ocutest.all.s$Species <- gsub('rhynchosporium commune','Rhynchosporium commune',ocutest.all.s$Species )
+ocutest.all.s$Species <- gsub('marssonina brunnea','Marssonina brunnea',ocutest.all.s$Species )
+ocutest.all.s$Species <- gsub('res.per contigs.high_confidence.lst','Parauncinula septata',ocutest.all.s$Species )
+
+
+ggplot(ocutest.all.s)+
+  geom_polygon(aes(GC,Portion), fill = 'tomato')+
+  facet_wrap(~Species, scales = 'free_y')+
+#  theme_minimal()+
+  ylab(label = 'Portion of the genome (%)')+
+  xlab(label = 'GC content (%)')
+
+```
+
+##### Figure 2B/C - RIP Indexes and dinucleotide frequencies 
+```{R}
+
+ggthemr('dust')
+### RIPCAL
+
+#I have included all the indexes from RIPCAL but let's keep it simple and check only the tad1,gypsy,copia for index1 and2.
+
+ripidx <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/05_ripcal/01_leotio_dinucl_calc/05_with_dominance/summary.all.noavg.dom', header = T, sep = ';')
+colnames(ripidx) <- c("species","family","TA/AT I1","(CpA+TpG)/(ApC+GpT) I2","(CpA+TpG)/TpA","(CpC + GpG)/(TpC + GpA)","CpG/(TpG + CpA)","(CpT + ApG)/(TpT + ApA)","counts_per_family")
+
+ripidx$dom_ca_ta <- ripidx$`(CpA+TpG)/TpA` / (ripidx$`(CpC + GpG)/(TpC + GpA)` + ripidx$`CpG/(TpG + CpA)` + ripidx$`(CpT + ApG)/(TpT + ApA)`)
+ripidx$dom_cc_tc <- ripidx$`(CpC + GpG)/(TpC + GpA)`  / ( ripidx$`(CpA+TpG)/TpA` + ripidx$`CpG/(TpG + CpA)` + ripidx$`(CpT + ApG)/(TpT + ApA)`)
+ripidx$dom_cg_tg <- ripidx$`CpG/(TpG + CpA)`  / (ripidx$`(CpC + GpG)/(TpC + GpA)` + ripidx$`(CpA+TpG)/TpA` + ripidx$`(CpT + ApG)/(TpT + ApA)`)
+ripidx$dom_ct_tt <-  ripidx$`(CpT + ApG)/(TpT + ApA)`  / (ripidx$`(CpC + GpG)/(TpC + GpA)` + ripidx$`CpG/(TpG + CpA)` + ripidx$`(CpA+TpG)/TpA`)
+
+
+ripidx.m <- melt(ripidx)
+ripidx.s <- cbind.data.frame(ripidx$species,ripidx$family,ripidx$`TA/AT I1`,ripidx$`(CpA+TpG)/(ApC+GpT) I2`,ripidx$dom_ca_ta,ripidx$dom_cc_tc,ripidx$dom_cg_tg,ripidx$dom_ct_tt)
+colnames(ripidx.s) <- c('species','family','I1','I2','dom_ca','dom_cc','dom_cg','dom_ct')
+
+#Here I take the four species from the previous figure
+ripidx.s1 <- subset.data.frame(ripidx.s, species == 'parauncinula_septata')
+ripidx.s2 <- subset.data.frame(ripidx.s, species == 'rhynchosporium_commune')
+ripidx.s3 <- subset.data.frame(ripidx.s, species == 'blumeria_graminis_fsp_hordei')
+ripidx.s4 <- subset.data.frame(ripidx.s, species == 'marssonina_brunnea')
+ripidx.s <- rbind(ripidx.s1,ripidx.s2,ripidx.s3,ripidx.s4)
+
+#Index 1
+
+ripidx.m <- melt(ripidx.s)
+ripidx.controls <- subset(ripidx.m, family == 'control')
+ripidx.m <- subset(ripidx.m,variable == 'I1')
+ripidx.m <- subset(ripidx.m,family == c('Gypsy','Copia','Tad1'))
+ripidx.controls <- subset(ripidx.controls, variable == 'I1')
+
+
+ggplot(ripidx.m)+
+  geom_boxplot(aes(x= family , y=value))+
+  geom_point(aes(x= family , y=value), colour = 'grey', alpha = 0.4)+
+  facet_wrap(~species , scales = 'fixed', ncol =6)+
+  geom_hline(data = ripidx.controls, aes(yintercept = value) , linetype="dashed", colour = 'red')+
+  geom_hline(yintercept = 0.89, linetype="dashed", colour = 'blue', alpha = 0.5)+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 9, hjust = 1), plot.title = element_text(hjust=0.5)) +
+#  theme_minimal()+
+  ylab(label = 'TpA/ApT')+
+  xlab(label = 'TE family')
+
+#Index 2 
+
+ripidx.m <- melt(ripidx.s)
+ripidx.controls <- subset(ripidx.m, family == 'control')
+ripidx.m <- subset(ripidx.m,variable == 'I2')
+ripidx.m <- subset(ripidx.m,family == c('Gypsy','Copia','Tad1'))
+ripidx.controls <- subset(ripidx.controls, variable == 'I2')
+
+
+ggplot(ripidx.m)+
+  geom_boxplot(aes(x= family , y=value))+
+  facet_wrap(~species , scales = 'free', ncol =6)+
+  geom_point(aes(x= family , y=value), colour = 'grey', alpha = 0.4)+
+  geom_hline(data = ripidx.controls, aes(yintercept = value) , linetype="dashed", colour = 'red')+
+  geom_hline(yintercept = 1.03, linetype="dashed", colour = 'blue')+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 9, hjust = 1), plot.title = element_text(hjust=0.5)) +
+#  theme_minimal()+
+  ylab(label = '(CpA + TpG)/(ApC+ GpT)')+
+  xlab(label = 'TE family')
+```
+
+##### Figure 2D - Repeat landscape for P. polyspora
+
+```{R}
+#The input comes from the scripts used in the Frantzeskakis et al. 2018 paper. 
+
+rep_table <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/11_repeat_landscape/res.per_contigs.high_confidence.lst.fa.align.landscape.Div.Rclass_removed_RC_unknown.tab', sep = '\t', header = T)
+colnames(rep_table) <- c('Rclass',1:50)
+
+rep_table.m <- melt(rep_table)
+
+ggthemr('dust')
+ggplot(rep_table.m,aes(fill=Rclass,x=variable,weight=value))+ 
+  geom_bar() +
+#  theme_minimal()+
+  scale_fill_brewer(palette="Set2") +
+  xlab("Divergence (%)")+
+  ylab("Sequence (bp)") +
+  ggtitle("Landscape plots of transposon divergence" )  +
+  theme(axis.text.x = element_text(angle =90, vjust = 1, size = 9, hjust = 1), plot.title = element_text(hjust=0.5)) 
+```
+
 #### Figure 3 - CAZYmes, CAGs, PFAMS
-##### Figure 3A - CAGs
+
+##### Figure 3A - CAGs and supplementary figure of trees
+
+The conserved ascomycete genes (CAGs) were identified based on blastp searches on the proteomes of the species included in the plot.
+
+```{R}
+
+#This is the parsed output of the blastp. I have also included a blastp search with the previous annotation of the Bgh (v3) but I have removed it since it is not relevant to this paper.
+
+cogs <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/10_missing_cogs/combined_table_for_R.csv.2', sep = ' ', header = F)
+colnames(cogs) <- c('species','yhom','count')
+cogs.c <- cast(cogs, species ~ yhom)
+cogs.c.m <- as.matrix(cogs.c, dimnames = list(cogs.c$species))
+cogs.c.m <- cogs.c.m[-1,]
+colnames(cogs.c.m) <- colnames(cogs.c)[-1]
+cogs.c.m.t <- t(cogs.c.m)
+
+#Functional grouping of the genes, this I did manually based on the Spanu Science 2010 paper, but also changing some entries if new categorization is available.
+
+annot <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/10_missing_cogs/gene_list_r.txt.atrrib.sorted.2.1',sep = '\t', header = F)
+storage.mode(cogs.c.m.t) <- 'integer'
+
+#remove bgh v3
+cogs.c.m.t <- cogs.c.m.t[,-1]
+
+#rename the columns to avoid more figure editing later
+
+colnames(cogs.c.m.t) <- c('B. graminis fsp hordeii', "B. graminis fsp tritici","Botrytis cinerea","Colletotrichum graminicola","Erysiphe necator",
+                          "Erysiphe pulchra","Fusarium oxysporum","Glarea lozoyensis","Golovinomyces cichoracearum", "Magnaporthe oryzae","Marssonina brunnea","Neurospora crassa",
+                          "Oidiodendron maius","Oidium neolycopersici", "Parauncinula septata", "Penicillium digitatum", "Phialocephala scopiformis",
+                          "Phialocephala subalpina", "Pseudogymnoascus destructans", "Pseudogymnoascus verrucosus",
+                          "Rhynchosporium agropyri", "Rhynchosporium commune", "Rhynchosporium secalis","Sclerotinia borealis", "Sclerotinia sclerotiorum","Verticillium dahliae", "Zymoseptoria tritici")      
+
+Heatmap(cogs.c.m.t,
+        col = colorpanel(2, low = 'whitesmoke', high = '#b2df8a'),
+        cluster_rows = F,
+        #cluster_columns = F,
+        split =  annot$V2,
+        gap = unit(1, "mm"),
+        row_names_gp = gpar(fontsize = 6),
+        show_heatmap_legend = T,
+        row_title_rot = 0,
+        row_title_gp = gpar(fontsize = 9),
+        column_names_gp = gpar(fontsize = 8),
+        name = 'CAGs'
+                )
+
+```
+
+
+In addition to this I have generated a figure with all the trees for every CAG in the plot and added it as a supplementary figure
+```{R}
+
+#The trees here are coming from the Orthofinder analysis. I grabbed the individual trees which orthofinder generates and pasted them in a single file. 
+tree2 <- read.newick('/Users/lfrantzeskakis/projects/03_jp_mildews/10_missing_cogs/yeast_parau_homologs/alltrees_clean_labels.txt', keep.multi = T)
+
+treenames <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/10_missing_cogs/yeast_parau_homologs/tree_names_yeast.csv', sep = ' ', header = F)
+class(tree2) <- "multiPhylo"
+names(tree2) <- treenames$V3
+
+ggtree(tree2, branch.length="none", layout="slanted")+
+  geom_tippoint(aes(color=grepl('botrytis|PARAU|sclerotinia_scl',label),shape=grepl('PARAU',label)),size=1)+
+  scale_color_brewer(palette='Paired')+
+  facet_wrap(~.id, scale="free")+
+  coord_flip()+
+  theme_minimal()+
+  theme(legend.title=element_blank(),axis.text.x=element_blank(),axis.text.y=element_blank())
+  
+
+```
+
+
 ##### Figure 3B - Cazymes
 
 Here I removed Pseudogymnoascus destructans from the plot since it is a animal pathogen so the comparison is a bit irrelevant.
 
 ```{R}
-##CAZY
 
+#This is the table after running HMMER with the dbCAN models and parsing the results
+#I also summarized the results giving counts per CAZy group (AA,GT,GH etc.)
 
 caz <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/06_cazy/all_results_for_R_summarized_final.csv', sep = ',', header = F)
 colnames(caz) <- c('CAZyme','Count','Species')
 
 
 caz$Count <- as.numeric(caz$Count)
-ggthemr('dust')
-ggthemr('greyscale')
 
-
-
-ggplot(caz, aes(caz$Species,caz$CAZyme))+
-  geom_tile(aes(fill = caz$Count))+
-  geom_text(aes(label = caz$Count ))+
-  #scale_fill_continuous(name = "Gene count")+
-  scale_fill_gradient(low = "white", high = "red",name = "Gene count")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 9, hjust = 1), plot.title = element_text(hjust=0.5))+
-  xlab('')+
-  ylab('CAZyme group')
+#You can also have the visualization with ggplot, but adding clustering is tedious. So will use heatmap2 instead. 
+# ggthemr('greyscale')
+# ggplot(caz, aes(caz$Species,caz$CAZyme))+
+#   geom_tile(aes(fill = caz$Count))+
+#   geom_text(aes(label = caz$Count ))+
+#   #scale_fill_continuous(name = "Gene count")+
+#   scale_fill_gradient(low = "white", high = "red",name = "Gene count")+
+#   theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 9, hjust = 1), plot.title = element_text(hjust=0.5))+
+#   xlab('')+
+#   ylab('CAZyme group')
   
 caz.m <- acast(caz,CAZyme~Species, value.var = 'Count')
-
-
 
 heatmap.2(caz.m[,-13],
           margins =c(35,5),
@@ -223,26 +457,31 @@ Here I am ploting in a vertical plot the PFAMs that are more that 3fold more fre
 
 ```{R}
 
+# These are the parsed results after running InterProScan on the annotations
+
 table_par <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/01_interpro_counts/pfam.parau.frequency.csv', sep = ' ', header = F)
 table_bgh <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/01_interpro_counts/pfam.bgh.frequency.csv', sep = ' ', header = F)
 colnames(table_par) <- c('PFAM','count_par','freq_par')
 colnames(table_bgh) <- c('PFAM','count_bgh','freq_bgh')
 
+#Here we merge the tables based on common PFAM rows and fill empty cells (N/A) with 0
 
 table_j <- merge(table_par,table_bgh,by = 'PFAM',all = T)
 table_j[is.na(table_j)] <- 0
 table_j$fold <- table_j$freq_par/table_j$freq_bgh
 
-# subseting to > 2 fold
+#Subseting to > 2 fold 
 
 table_j_sub <- subset(table_j, table_j$fold > 2 & table_j$fold < Inf )
 table_j_in <- subset(table_j, table_j$fold == Inf )
 
+#Here write the table so I can add the annotations of these PFAM domains
 write.csv(table_j_sub,'/Users/lfrantzeskakis/projects/03_jp_mildews/01_interpro_counts/table_j_sub.txt')
 ## in bash: grep -f table_j_sub.txt.lst pfam.tsv | awk 'FS="\t" {print $5,$6}' | sort | uniq > table_j_sub.txt.lst.descr
 pfam.descr <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/01_interpro_counts/table_j_sub.txt.lst.descr', sep = '\t', header = F)
 colnames(pfam.descr) <- c('PFAM','description')
 table_j_sub_m <- merge(table_j_sub,pfam.descr, by = 'PFAM',all = T)
+
 
 ggplot(table_j_sub_m, aes(x=reorder(description,fold), y=fold)) +
   geom_bar(stat='identity', fill = 'black') +
@@ -250,7 +489,7 @@ ggplot(table_j_sub_m, aes(x=reorder(description,fold), y=fold)) +
   theme_minimal()
 
 
-# subseting to > 5 fold to make a more compact figure
+#Subseting to > 5 fold to make a more compact figure
 
 table_j_sub_m5 <- subset(table_j_sub_m, table_j_sub_m$fold > 3 )
 
@@ -260,6 +499,7 @@ ggplot(table_j_sub_m5, aes(x=reorder(description,fold), y=fold)) +
   xlab('')+
   ylab('Fold difference compared to Bgh')+
   theme_minimal()
+
 ```
 
 
@@ -282,3 +522,157 @@ When you save the notebook, an HTML file containing the code and output will be 
 
 The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
 
+
+#### Figure 4 - Secretome
+##### Figure 4A - Secretome of P. polyspora
+```{R}
+# Again you parse the results from Orthofinder based on orthogroups with P.polyspora secreted proteins
+
+orthog <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/13_secretome/ortho_def-6-15.csv', sep = ',', header = F)
+table1 <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/13_secretome/result-6-15.txt', sep = ' ', header = F)
+
+table1.m <- acast(table1,V1~V2, value.var = 'V3')
+table2.m <- table1.m[,c(1,3,6,7,10,12,13,15)]
+
+Heatmap(table2.m,
+        col = colorpanel(10, low = 'white', mid = 'gray', high = 'darkred'),
+        cluster_rows = T,
+        cluster_columns = T,
+        split =  orthog$V2,
+        gap = unit(1, "mm"),
+        row_names_gp = gpar(fontsize = 6),
+        show_heatmap_legend = T,
+        row_title_rot = 0,
+        row_title_gp = gpar(fontsize = 7),
+        column_names_gp = gpar(fontsize = 7),
+        cell_fun = function(j, i, x, y, width, height, fill) {
+            grid.text(sprintf("%.0f", table2.m[i, j]), x, y, gp = gpar(fontsize = 4))
+            }
+)
+
+
+```
+#### Supplementary Figures
+##### Suppl. Figure 1C - QC of assembly
+```{R}
+## bash part:
+#blasting:
+#/home/lf216591/miniconda2/bin/tblastn -query /hpcwork/lf216591/15_parauncinula_assembly_cleanup/quercus_prots/GCF_002906115.1_CorkOak1.0_protein.faa -db /work/lf216591/07_pleo_para_annot/01_parauncinula/01_paraunc_annotation/05_selection_by_bgh_homology/scaffolds.draft2.500bp.nobact.fa -outfmt 6 -evalue 10e-5 -max_target_seqs 1 -num_threads 12 > quercus_hits.tsv
+#cut -f2,3,11 scaffolds.draft2.500bp.nobact.fa.tblastnenec12.txt | sed 's/_/ /g' |  cut -f4,6,7,8 > size_coverage_evalue.enec.tsv
+#cut -f2,3,11 scaffolds.draft2.500bp.nobact.fa.tblastnbgh12.txt | sed 's/_/  /g' |  cut -f4,6,7,8 > size_coverage_evalue.bgh.tsv
+
+
+sceb <- read.csv('size_coverage_evalue.bgh.tsv', sep = '\t', header = F)
+scee <- read.csv('size_coverage_evalue.enec.tsv', sep = '\t', header = F)
+sceq <- read.csv('size_coverage_evalue.quercus.tsv', sep = '\t', header = F)
+sceb <- cbind(sceb,'B. graminis f.sp. hordeii') # bgh 
+scee <- cbind(scee,'E. necator') # necator
+sceq <- cbind(sceq,'Q. suber') # plant hits
+
+colnames(sceb) <- c('Size (bp)','Coverage','ID (%)','evalue','species')
+colnames(scee) <- c('Size (bp)','Coverage','ID (%)','evalue','species')
+colnames(sceq) <- c('Size (bp)','Coverage','ID (%)','evalue','species')
+sce<- rbind(sceb,scee,sceq)
+
+## Plotting coverage, size and evalue for the tblastn BGH hits to the assembly
+ggplot(sce)+
+  geom_point(aes(size,coverage, colour = id), alpha=0.75)+
+  scale_colour_gradient2(midpoint = 50, low = 'tomato', high = 'black')+
+  scale_x_log10(breaks = c(0,1000,10000,100000,1000000))+
+  scale_y_log10(breaks = c(seq(0,100,10),1,5,200,500))+
+  facet_wrap(~species)
+
+ggplot(sce)+
+  geom_point(aes(`Size (bp)`,`Coverage`, colour =`ID (%)`), alpha=0.5)+
+  scale_colour_gradient2( low = 'blue',mid = 'white', high = 'red', midpoint = 50)+
+  scale_x_log10(breaks = c(0,1000,10000,100000,1000000))+
+  scale_y_log10(breaks = c(seq(0,100,10),1,5,200,500))+
+  facet_wrap(~species)+
+  theme_minimal()
+
+## In way what you see is that the Quercus hits are in contings <5 depth, and in the >30 its low identity hits. While in Bgh/Enec is kind of the oposite.
+## To me it is ok enough to say that I cut out whatever is <20 as plant related and keep >20 as fungal/powdery mildew. Together with BUSCO it should be convincing but we'll see.
+```
+
+
+##### Suppl. Figure 4 - Density plot for the 10 largest contigs
+```{R}
+genes <- read.table('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/res.per_contigs.high_confidence.lst.gff.bed_top10', sep = '\t',header = F)
+tes <- read.table('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/res.per_contigs.high_confidence.lst.fa.out.gff.TE.bed_top10', sep = '\t',header = F)
+sps <- read.table('/Users/lfrantzeskakis/projects/03_jp_mildews/06_TE_distribution/res.per_contigs.high_confidence.lst.gff.bed_top10_secreted', sep = '\t',header = F)
+genes <- cbind(genes, 'Genes')
+tes <- cbind(tes, 'TEs')
+sps <- cbind(sps, 'SPs')
+
+colnames(genes) <- c('scaffold','start','stop','id','type')
+colnames(tes) <- c('scaffold','start','stop','id','type')
+colnames(sps) <- c('scaffold','start','stop','id','type')
+
+
+dat <- rbind(genes,tes,sps)
+
+ggplot(dat)+ 
+  geom_density_ridges(aes(x=start , y=type) ,bandwidth = 5000)+
+  labs(title = 'Gene and repetitive element density',
+       subtitle = 'Density of elements per 5kb in the ten largest scaffolds') +
+  theme_ridges(font_size = 8, grid = T) + theme(axis.title.y = element_blank()) +
+  scale_x_continuous()+
+  facet_wrap(~ scaffold, ncol = 2, scales = 'free_x')
+
+```
+
+##### Suppl. Figure 6 - Trees from Orthogroups
+```{R}
+
+tree2 <- read.newick('/Users/lfrantzeskakis/projects/03_jp_mildews/10_missing_cogs/yeast_parau_homologs/alltrees_clean_labels.txt', keep.multi = T)
+
+treenames <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/10_missing_cogs/yeast_parau_homologs/tree_names_yeast.csv', sep = ' ', header = F)
+class(tree2) <- "multiPhylo"
+names(tree2) <- treenames$V3
+
+ggtree(tree2, branch.length="none", layout="slanted")+
+  geom_tippoint(aes(color=grepl('botrytis|PARAU|sclerotinia_scl',label),shape=grepl('PARAU',label)),size=1)+
+  scale_color_brewer(palette='Paired')+
+  facet_wrap(~.id, scale="free")+
+  coord_flip()+
+  theme_minimal()+
+  theme(legend.title=element_blank(),axis.text.x=element_blank(),axis.text.y=element_blank())
+  
+
+
+```
+
+##### Suppl. Figure 7 - RNAse-like orthogroups
+```{R}
+
+table1 <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/09_rnases/supl_fig_7/result.txt', sep = ' ', header = F)
+table1.m <- acast(table1,V1~V2, value.var = 'V3')
+
+ggplot(table1, aes(V2,V1))+
+  geom_tile(aes(fill = V3))+
+  geom_text(aes(label = V3 ))+
+  #scale_fill_continuous(name = "Gene count")+
+  scale_fill_gradient(low = "white", high = "red",name = "Gene count")+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 9, hjust = 1), plot.title = element_text(hjust=0.5))+
+  xlab('')+
+  ylab('RNAse-like secreted protein containing orthogroup')
+
+heatmap.2(table1.m,
+          #margins =c(35,5),
+          trace="none",
+          col = colorpanel(10, low = 'snow',mid = 'indianred', high = 'darkred'),
+          dendrogram="both",
+          denscol = 'black',
+          cexRow = 0.75,
+          cexCol = 1,
+          key = T,
+          key.title = '',
+          keysize = 1,
+          key.xlab = 'Count',
+          key.ylab = '',
+          density.info = 'none',
+          scale = 'none',
+          cellnote=table1.m,
+          notecol='black'
+)
+```
