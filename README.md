@@ -31,15 +31,15 @@ bfc -b 32 -k 25 -t 10 out.fastq.gz 2>| input.corr.fastq.gz.bfc.e | seqtk dropse 
 # This I run spades, presplit the input since it is faster.
 
 spades.py \
--m 2000 \
+-m 90 \
 --tmp-dir $SLURM_TMP \
--o spades3 \
+-o spades \
 --only-assembler \
--k 33,55,77,99,127 \
+-k 31,51,71,91,111 \
 --meta \
--t 32 \
--1 /global/projectb/scratch/aclum/metagenomes/benchmarking/bfc_params/mock/split/reads1.fasta \
--2 /global/projectb/scratch/aclum/metagenomes/benchmarking/bfc_params/mock/split/reads2.fasta
+-t 16 \
+-1 reads1.fasta \
+-2 reads2.fasta
 
 ```
 
