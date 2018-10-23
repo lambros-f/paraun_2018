@@ -289,3 +289,53 @@ So now the final assembly is "res.per_contigs.high_confidence.lst.fa", and based
 
 
 ## Analysis
+
+Note that in the scripts used and the output files the file res.per_contigs.high_confidence.lst.fa is the genome assembly with the high confidence contigs of P. polyspora.
+
+### Genomes/Proteomes used for analysis
+
+The Leotiomycete and Ascomycete datasets used for the downstream analysis see Suppl. Table 8.
+
+### MAKER
+
+For the annotation, the setting files (*.ctl) used for maker are in various_scripts.
+
+### Orthofinder
+
+Orthofinder version used is 1.1.2, and was called with default options e.g. "orthofinder -t 12 -f protein_seq_folder"
+
+The output from the comparison of the 16 Leotiomycete species (proteomes.tar.gz), including the derived species tree is in useful_files/01_Orthofinder_output 
+
+### RepeatMasker
+
+RepeatMasker version used is 4.0.6, and was called by:
+```
+RepeatMasker -species fungi -pa 12 -excln -gff -no_is genome.fa
+```
+
+Output is in useful_files/02_Repeatmasker
+
+### Secretome
+
+For the secretome SignalP v4.1 and TMHMM v2.0c, were used. The output from SignalP was passed to TMHMM to screen for transmembrane domains (tm) and then proteins with tm were removed. The script used was:
+
+```
+file1=res.per_contigs.high_confidence.gene.lst.fa
+
+/home/lf216591/utils/signalp-4.1/signalp \
+-m m.$file1 \
+$file1 > $file1.signalp.out
+
+/home/lf216591/utils/tmhmm-2.0c/bin/tmhmm \
+m.$file1 > m.$file1.tmhmm
+
+grep 'Number of predicted TMHs:  0' m.$file1.tmhmm | cut -f2 -d ' ' > m.$file1.tmhmm.notmm
+
+sh get_seqs.sh m.$file1.tmhmm.notmm m.$file1 m.$file1.tmhmm.notmm.fa
+```
+
+The get_seqs.sh script is a simple bash script to get sequences from a list of headers. Copied it in various_scripts.
+
+
+
+
