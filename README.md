@@ -289,3 +289,142 @@ So now the final assembly is "res.per_contigs.high_confidence.lst.fa", and based
 
 
 ## Analysis
+
+Note that in the scripts used and the output files the file res.per_contigs.high_confidence.lst.fa is the genome assembly with the high confidence contigs of P. polyspora.
+
+### Genomes/Proteomes used for analysis
+
+The Leotiomycete and Ascomycete datasets used for the downstream analysis see Suppl. Table 8.
+
+### MAKER
+
+For the annotation, the setting files (*.ctl) used for maker are in various_scripts.
+
+### Orthofinder
+
+Orthofinder version used is 1.1.2, and was called with default options e.g. "orthofinder -t 12 -f protein_seq_folder"
+
+The output from the comparison of the 16 Leotiomycete species (proteomes.tar.gz), including the derived species tree is in useful_files/01_Orthofinder_output 
+
+### RepeatMasker
+
+RepeatMasker version used is 4.0.6, and was called by:
+```
+RepeatMasker -species fungi -pa 12 -excln -gff -no_is genome.fa
+```
+
+Output is in useful_files/02_Repeatmasker
+
+### Secretome
+
+For the secretome SignalP v4.1 and TMHMM v2.0c, were used. The output from SignalP was passed to TMHMM to screen for transmembrane domains (tm) and then proteins with tm were removed. The script used iteratively for all proteomes analysed was:
+
+```
+file1=res.per_contigs.high_confidence.gene.lst.fa
+
+/home/lf216591/utils/signalp-4.1/signalp \
+-m m.$file1 \
+$file1 > $file1.signalp.out
+
+/home/lf216591/utils/tmhmm-2.0c/bin/tmhmm \
+m.$file1 > m.$file1.tmhmm
+
+grep 'Number of predicted TMHs:  0' m.$file1.tmhmm | cut -f2 -d ' ' > m.$file1.tmhmm.notmm
+
+sh get_seqs.sh m.$file1.tmhmm.notmm m.$file1 m.$file1.tmhmm.notmm.fa
+```
+
+The get_seqs.sh script is a simple bash script to get sequences from a list of headers. Copied it in various_scripts.
+
+The putatively secreted proteins of P. polyspora with their PFAM annotations (if any) are in the useful_files/03_secretome
+
+### Functional annotation
+
+For the functional annotation I used InterProScan v5.19-58.0, and was called as
+
+```
+interproscan.sh -appl Pfam -i res.per_contigs.high_confidence.gene.lst.fa -dp -b pfam
+````
+
+The annotations based on PFAM and SUPERFAMILY databases are in useful_files/superfam_pfam_annot.tsv
+
+### RIPCAL & OcculterCut
+
+### CAZymes
+
+The CAZyme analysis was based on the dbCAN v6 models. The script used to do a hmm search with HMMER 3.1b2 was:
+
+```
+for genome in `ls ../03_Orthofinder/03_high_confidence_contigs/*.faa`;do
+echo $genome
+/home/lf216591/utils/hmmer-3.1b2-linux-intel-x86_64/bin/hmmscan --cpu 12 --domtblout $genome.domtblout ~/utils/dbCAN/dbCAN-fam-HMMs.txt.v6 $genome > $genome.hmmout
+echo 'Step 1 : ok'
+sh /home/lf216591/utils/dbCAN/hmmscan-parser.sh $genome.domtblout | column -t | sort -k1 | sed 's/\.hmm//g' | tee $genome.hmmresults
+cut -f1 -d ' ' test2  | sort | uniq -c | awk '{print $2,$1,"$genome"}' >> all_results_for_R.csv
+mv $genome.domtblout $genome.hmmresults $genome.hmmout ./
+echo 'Step 2 : ok'
+done
+
+for genome in `ls ../03_Orthofinder/03_high_confidence_contigs/*.fa`;do
+echo $genome
+/home/lf216591/utils/hmmer-3.1b2-linux-intel-x86_64/bin/hmmscan --cpu 12 --domtblout $genome.domtblout ~/utils/dbCAN/dbCAN-fam-HMMs.txt.v6 $genome > $genome.hmmout
+sh /home/lf216591/utils/dbCAN/hmmscan-parser.sh $genome.domtblout | column -t | sort -k1 | sed 's/\.hmm//g' > $genome.hmmresults
+cut -f1 -d ' ' test2  | sort | uniq -c | awk '{print $2,$1,"$genome"}' >> all_results_for_R.csv
+done
+
+mv ../03_Orthofinder/03_high_confidence_contigs/all_results_for_R.csv ./
+```
+
+### MCSCANX
+
+For the duplicate gene search I used MCSCANX v2 (http://chibba.pgml.uga.edu/mcscan2/), after generating a blast output (-output 6) with a 80% identity cutoff.
+
+```
+blastp -query ../../00_high_conf_dataset/res.per_contigs.high_confidence.gene.lst.fa -subject ../../00_high_conf_dataset/res.per_contigs.high_confidence.gene.lst.fa -evalue 1e-10 -outfmt 6 | tee parau.blast_all
+
+awk '{if ($3 > 80) print}' parau.blast_all > parau.blast
+```
+
+The two files: parau.blast parau.gff in useful_files/ can be used to re-run the analysis. The parau.gene_type is the output.
+
+### RNAse-like protein phylogeny
+
+I did this work using the proteomes from Bgh DH14, E. necator, E. pulchtra, G. cichoracearum, O. neolycopersici and P. polyspora. 
+
+First, I annotated all the secretomes defined as previously with Interpro, also as previously. Then I excluded all the proteins that had a PFAM annotation with a simple script.
+
+```
+for filez in `ls *.fa`;do
+grep '>' $filez | tr -d '>' | sed -e 's/ ; MatureChain:.*//g' -e 's/\s.*//g' > $filez.prot.lst
+grep -f $filez.prot.lst $filez.tsv | grep Pfam | cut -f1 | sort | uniq > $filez.havepfam.lst
+grep -v -f $filez.havepfam.lst $filez.prot.lst > $filez.nopfam.lst
+sh get_seqs.sh $filez.nopfam.lst $filez $filez.nopfam.lst.fa
+done
+```
+
+Then I aligned using MAFFT v7.310, with
+
+```
+mafft --amino --6merpair --maxiterate 1000 --thread 12 all_secreted_with_new_abini_nopfam.fa > all_secreted_with_new_abini_nopfam.fa.aln
+```
+
+Alignment and the protein sequences used are in useful_files/04_rnaselike_phylogeny
+
+Then used FastTree version 2.1.10 SSE3 to generate the ML tree
+
+```
+FastTree all_secreted_with_new_abini_nopfam.fa.aln > all_secreted_with_new_abini_nopfam.fa.aln.fsttree
+```
+
+Output from FastTree with the settings:
+```
+Alignment: all_secreted_with_new_abini_nopfam.fa.aln
+Amino acid distances: BLOSUM45 Joins: balanced Support: SH-like 1000
+Search: Normal +NNI +SPR (2 rounds range 10) +ML-NNI opt-each=1
+TopHits: 1.00*sqrtN close=default refresh=0.80
+ML Model: Jones-Taylor-Thorton, CAT approximation with 20 rate categories
+```
+
+A similar tree was generated with IQTree 1.6.beta4 (although the method is more computationally consuming), but I didn't include ~10 Parauncinula abinitio predicted RNAses. The files for this tree are in useful_files/03_secretome/iqtree
+
+
