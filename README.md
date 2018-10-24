@@ -350,6 +350,25 @@ The annotations based on PFAM and SUPERFAMILY databases are in useful_files/supe
 
 ### RIPCAL & OcculterCut
 
+I used OcculterCut v1.1 and RIPCAL v2 to calculate the GC composition and dinucleotide composition respectively. 
+
+```
+# for OcculterCut
+for filez in `ls ../00_genomes`;do
+echo $filez
+~/utils/OcculterCut_v1.1/OcculterCut -f ../00_genomes/$filez
+mv compositionGC.txt $filez.compositionGC.txt
+mv myGenome.txt $filez.myGenome.txt
+
+done
+
+# for RIPCAL
+for gffz in `ls *.gff`;do
+perl ../RMgff2ripcalgff.pl $gffz
+perl ../ripcal -c -s -gff $gffz.ripcal.gff
+done
+
+```
 ### CAZymes
 
 The CAZyme analysis was based on the dbCAN v6 models. The script used to do a hmm search with HMMER 3.1b2 was:
