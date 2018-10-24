@@ -446,4 +446,71 @@ ML Model: Jones-Taylor-Thorton, CAT approximation with 20 rate categories
 
 A similar tree was generated with IQTree 1.6.beta4 (although the method is more computationally consuming), but I didn't include ~10 Parauncinula abinitio predicted RNAses. The files for this tree are in useful_files/03_secretome/iqtree
 
+### SNPs in the high confidence contigs
+
+As described in methods: "In order to discover the number of single nucleotide polymorphisms in the P. polyspora genome assembly we initially mapped the reads using BWA-MEM v0.7.15-r1140 (Li 2013). The resulting sam file was processed (conversion to bam, sorting) with Picard tools v2.8.2 (http://broadinstitute.github.io/picard), and then polymorphisms were identified using samtools mpileup and bcftools (v0.1.19 , Li et al. 2009) and filtered with SnpSift v4.3i (QUAL >= 20 && DP > 3 && MQ > 50, Cingolani et al. 2012)." . I think this is the simplest pipeline to validate what it expected that we sequenced at least two P. polyspora individuals since we collected chasmothecia.
+
+The script used is:
+
+```
+#!/bin/bash
+
+gatk='java -jar /home/lf216591/utils/gatk/GenomeAnalysisTK.jar'
+bwa=/home/lf216591/utils/bin/bwa
+star=/home/lf216591/utils/bin/STAR
+samtools=/home/lf216591/utils/samtools-1.3.1/samtools
+picard='java -jar /home/lf216591/utils/bin/picard-2.8.2.jar'
+snpeff='java -Xmx4g -jar /home/lf216591/utils/snpEff/snpEff.jar eff'
+
+
+cd /work/lf216591/07_pleo_para_annot/01_parauncinula/22_snps_on_high_conf
+
+genome=res.per_contigs.high_confidence.lst.fa
+isolate=parau
+fsp=polysp
+
+read1=/hpcwork/rwth0146/unpublished_data/podosphaera_jap_short_reads/S678Nr3.1.fastq.gz
+read2=/hpcwork/rwth0146/unpublished_data/podosphaera_jap_short_reads/S678Nr3.2.fastq.gz
+
+#$bwa mem -t 12 $genome $read1 $read2 > $isolate-$fsp.sam
+
+#### Here Picard sorts and generates bam file
+
+$picard \
+AddOrReplaceReadGroups \
+I=$isolate-$fsp.sam \
+O=rg_added_sorted.bam \
+SO=coordinate \
+RGID=$isolate \
+RGLB=$isolate-$fsp \
+RGPL=ILLUMINA \
+RGSM=$isolate \
+RGPU=
+
+$picard \
+MarkDuplicates \
+I=rg_added_sorted.bam \
+O=$isolate-$fsp.dedupped.bam \
+CREATE_INDEX=true \
+VALIDATION_STRINGENCY=SILENT \
+M=output.metrics
+
+/home/lf216591/utils/samtools-0.1.19/samtools mpileup \
+-g -f $genome \
+$isolate-$fsp.dedupped.bam > $isolate-$fsp.dedupped.raw.bcf
+
+echo 'end step1'
+
+/home/lf216591/utils/bin/bcftools view -bvcg  $isolate-$fsp.dedupped.raw.bcf >  $isolate-$fsp.dedupped.var.bcf
+
+#No filtering with vcf tools
+
+bcftools view $isolate-$fsp.dedupped.var.bcf > $isolate-$fsp.dedupped.final.vcf
+
+
+echo 'SNPsift filter and snpeff annotation'
+
+java -jar ~/utils/snpEff/SnpSift.jar filter " ( QUAL >= 20 && DP > 3 && MQ > 50 )" $isolate-$fsp.dedupped.final.vcf > $isolate-$fsp.dedupped.snpsift.vcf
+```
+
 
