@@ -1,0 +1,105 @@
+Sender: LSF System <lsfadmin@linuxbmc0289>
+Subject: Job 45474567: <fastree> in cluster <rcc> Done
+
+Job <fastree> was submitted from host <cluster> by user <lf216591> in cluster <rcc> at Tue Oct 30 18:42:14 2018
+Job was executed on host(s) <12*linuxbmc0289>, in queue <rwth>, as user <lf216591> in cluster <rcc> at Tue Oct 30 18:42:40 2018
+</home/lf216591> was used as the home directory.
+</work/lf216591/07_pleo_para_annot/01_parauncinula/03_Orthofinder/06_older_orthov/Results_Oct29> was used as the working directory.
+Started at Tue Oct 30 18:42:40 2018
+Terminated at Tue Oct 30 19:11:10 2018
+Results reported at Tue Oct 30 19:11:10 2018
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+
+#BSUB -J fastree
+#BSUB -u lamprinos.frantzeskakis@rwth-aachen.de
+#BSUB -o job.%J.%I
+#BSUB -W 48:00
+#BSUB -M 1800
+#BSUB -n 12
+#BSUB -a openmpi
+#BSUB -P rwth0146
+#BSUB -R "span[hosts=1]"
+#BSUB -R "select[hpcwork]"
+
+source /home/lf216591/.bash_profile
+
+
+cd /work/lf216591/07_pleo_para_annot/01_parauncinula/03_Orthofinder/06_older_orthov/Results_Oct29/Singlecopyalignments
+/home/lf216591/utils/fasttree/FastTree -fastest -pseudo all.scog_alignments.fa > test
+
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   1721.64 sec.
+    Max Memory :                                 8626 MB
+    Average Memory :                             4082.14 MB
+    Total Requested Memory :                     21600.00 MB
+    Delta Memory :                               12974.00 MB
+    Max Swap :                                   -
+    Max Processes :                              5
+    Max Threads :                                6
+    Run time :                                   1710 sec.
+    Turnaround time :                            1736 sec.
+
+The output (if any) follows:
+
+FastTree Version 2.1.10 SSE3
+Alignment: all.scog_alignments.fa
+Amino acid distances: BLOSUM45 Joins: balanced Support: SH-like 1000
+Search: Fastest+2nd +NNI +SPR (2 rounds range 10) +ML-NNI opt-each=1
+TopHits: 1.00*sqrtN close=default refresh=0.50
+ML Model: Jones-Taylor-Thorton, CAT approximation with 20 rate categories
+Pseudocount weight for comparing sequences with little overlap: 1.000
+Ignored unknown character X (seen 588 times)
+      1.87 seconds: Checking top hits for      1 of     16 seqs
+Initial topology in 11.93 seconds
+Refining topology: 16 rounds ME-NNIs, 2 rounds ME-SPRs, 8 rounds ML-NNIs
+     11.92 seconds: ME NNI round 1 of 16, 1 of 14 splits
+     14.57 seconds: SPR round   1 of   2, 1 of 30 nodes
+     80.31 seconds: ME NNI round 6 of 16, 1 of 14 splits
+     82.91 seconds: SPR round   2 of   2, 1 of 30 nodes
+    149.32 seconds: ME NNI round 11 of 16, 1 of 14 splits
+Total branch-length 2.452 after 155.20 sec
+    155.81 seconds: ML Lengths 1 of 14 splits
+    249.32 seconds: ML NNI round 1 of 8, 1 of 14 splits
+ML-NNI round 1: LogLk = -20499783.017 NNIs 1 max delta 11681.98 Time 500.24
+    508.50 seconds: Site likelihoods with rate category 1 of 20
+    516.78 seconds: Site likelihoods with rate category 2 of 20
+    525.04 seconds: Site likelihoods with rate category 3 of 20
+    533.29 seconds: Site likelihoods with rate category 4 of 20
+    541.54 seconds: Site likelihoods with rate category 5 of 20
+    549.80 seconds: Site likelihoods with rate category 6 of 20
+    558.05 seconds: Site likelihoods with rate category 7 of 20
+    566.29 seconds: Site likelihoods with rate category 8 of 20
+    574.54 seconds: Site likelihoods with rate category 9 of 20
+    582.80 seconds: Site likelihoods with rate category 10 of 20
+    591.04 seconds: Site likelihoods with rate category 11 of 20
+    599.27 seconds: Site likelihoods with rate category 12 of 20
+    607.51 seconds: Site likelihoods with rate category 13 of 20
+    615.74 seconds: Site likelihoods with rate category 14 of 20
+    623.98 seconds: Site likelihoods with rate category 15 of 20
+    632.21 seconds: Site likelihoods with rate category 16 of 20
+    640.45 seconds: Site likelihoods with rate category 17 of 20
+    648.70 seconds: Site likelihoods with rate category 18 of 20
+    656.93 seconds: Site likelihoods with rate category 19 of 20
+    665.18 seconds: Site likelihoods with rate category 20 of 20
+Switched to using 20 rate categories (CAT approximation)
+Rate categories were divided by 0.830 so that average rate = 1.0
+CAT-based log-likelihoods may not be comparable across runs
+Use -gamma for approximate but comparable Gamma(20) log-likelihoods
+    680.56 seconds: ML NNI round 2 of 8, 1 of 14 splits
+ML-NNI round 2: LogLk = -18852625.994 NNIs 0 max delta 0.00 Time 764.32
+Turning off heuristics for final round of ML NNIs (converged)
+    764.32 seconds: ML NNI round 3 of 8, 1 of 14 splits
+ML-NNI round 3: LogLk = -18846826.909 NNIs 0 max delta 0.00 Time 1018.84 (final)
+   1018.83 seconds: ML Lengths 1 of 14 splits
+Optimize all lengths: LogLk = -18846820.827 Time 1108.29
+Total time: 1686.39 seconds Unique: 16/16 Bad splits: 0/13
