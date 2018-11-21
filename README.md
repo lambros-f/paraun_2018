@@ -2,23 +2,15 @@
 
 Information about the sample:
 
-Parauncinula septata on Quercus serrata
+Parauncinula polyspora on Quercus serrata
 collected: 9 November 2017 in Torimiyama Park, Haibara, Uda-shi, Nara Prefecture, Japan
 (DNA extracts were prepared from the same collection)
 
 DNA extraction was performed either by collecting chasmothecia or by acetone/cellulose peeling of the collected leaves. 
 
-DNA was send for sequencing at CEGAT and was sequenced with Illumina HiSeq?, 2x150bp.
+DNA was send for sequencing at CEGAT and was sequenced with Illumina NovaSeq?, 2x150bp.
 
-This is for later:
-Pleochaeta shiraiana on Celtis sinensis
-collected: 13 December 2017 in Mie University Campus, Tsu-shi, Mie Prefecture, Japan
-(DNA extracts were prepared from powdery mildew on the same host plant individual on earlier dates)
- 
-Please be careful with Celtis leaves as they can be co-infected with Erysiphe kusanoi besides P. shiraiana (but you can easily differentiate them by chasmothecial morphology and size).
- 
-I think most probably most of the extracts in tubes contain very tiny amount of DNA (if any at all).
- 
+
 ## Assembly of the reads
 
 See original script I submitted. This below is indicative of that I run.
