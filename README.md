@@ -1,4 +1,4 @@
-# Parauncinula septata
+# Parauncinula polyspora
 
 Information about the sample:
 
