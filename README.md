@@ -1,6 +1,13 @@
-# Parauncinula polyspora
+# Parauncinula polyspora manuscript
 
-Information about the sample:
+Here I have the scripts and details on the analysis of the P. polyspora genome.
+
+See the Rmd file for the R scripts used to generate most of the figures in the paper.
+
+For questions and comments please send an email to lfrantzeskakis//at//lbl.gov
+
+
+## Information about the sample
 
 Parauncinula polyspora on Quercus serrata
 collected: 9 November 2017 in Torimiyama Park, Haibara, Uda-shi, Nara Prefecture, Japan
