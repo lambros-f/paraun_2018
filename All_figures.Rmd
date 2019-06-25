@@ -33,6 +33,7 @@ library(ComplexHeatmap)
 library(tidyverse)
 library(ggtree)
 library(ggplus)
+library(pheatmap)
 
 ```
 
@@ -335,6 +336,8 @@ ggplot(rep_table.m,aes(fill=Rclass,x=variable,weight=value))+
 
 The conserved ascomycete genes (CAGs) were identified based on blastp searches on the proteomes of the species included in the plot.
 
+This is the initial figure in the Biorxiv version.
+
 ```{R}
 
 #This is the parsed output of the blastp. I have also included a blastp search with the previous annotation of the Bgh (v3) but I have removed it since it is not relevant to this paper.
@@ -379,14 +382,118 @@ Heatmap(cogs.c.m.t,
 
 ```
 
+However, during the revisions I realized that some yeast genes in the list derived by the first powdery mildew genomics paper on Science (Spanu, 2010) are either duplicates or have high homology between each other. I removed these occurences (16 genes). The final interpretation does not change.
 
-In addition to this I have generated a figure with all the trees for every CAG in the plot and added it as a supplementary figure
+```{R}
+#This is the parsed output of the blastp. I have also included a blastp search with the previous annotation of the Bgh (v3) but I have removed it since it is not relevant to this paper.
+
+cogs <- read.csv('combined_table_for_R.csv.2', sep = ' ', header = F)
+colnames(cogs) <- c('species','yhom','count')
+cogs.c <- cast(cogs, species ~ yhom)
+cogs.c.m <- as.matrix(cogs.c, dimnames = list(cogs.c$species))
+cogs.c.m <- cogs.c.m[-1,]
+colnames(cogs.c.m) <- colnames(cogs.c)[-1]
+cogs.c.m.t <- t(cogs.c.m)
+
+#Functional grouping of the genes, this I did manually based on the Spanu Science 2010 paper, but also changing some entries if new categorization is available.
+
+annot <- read.csv('gene_list_r.txt.atrrib.sorted.2.1',sep = '\t', header = F)
+storage.mode(cogs.c.m.t) <- 'integer'
+
+#remove bgh v3
+cogs.c.m.t <- cogs.c.m.t[,-1]
+
+#rename the columns to avoid more figure editing later
+
+colnames(cogs.c.m.t) <- c('B. graminis fsp hordeii', "B. graminis fsp tritici","Botrytis cinerea","Colletotrichum graminicola","Erysiphe necator",
+                          "Erysiphe pulchra","Fusarium oxysporum","Glarea lozoyensis","Golovinomyces cichoracearum", "Magnaporthe oryzae","Marssonina brunnea","Neurospora crassa",
+                          "Oidiodendron maius","Oidium neolycopersici", "Parauncinula septata", "Penicillium digitatum", "Phialocephala scopiformis",
+                          "Phialocephala subalpina", "Pseudogymnoascus destructans", "Pseudogymnoascus verrucosus",
+                          "Rhynchosporium agropyri", "Rhynchosporium commune", "Rhynchosporium secalis","Sclerotinia borealis", "Sclerotinia sclerotiorum","Verticillium dahliae", "Zymoseptoria tritici")      
+
+Heatmap(cogs.c.m.t,
+        col = colorpanel(2, low = 'whitesmoke', high = '#b2df8a'),
+        cluster_rows = F,
+        #cluster_columns = F,
+        split =  annot$V2,
+        gap = unit(1, "mm"),
+        row_names_gp = gpar(fontsize = 6),
+        show_heatmap_legend = T,
+        row_title_rot = 0,
+        row_title_gp = gpar(fontsize = 9),
+        column_names_gp = gpar(fontsize = 8),
+        name = 'CAGs'
+)
+
+
+cogs.corrected <- subset(cogs, yhom != "YPL258C" & 
+                           yhom != 'YPR121W' &
+                           yhom != 'YMR251W' &
+                           yhom != 'YGR154C' &
+                           yhom != 'YCR107W' &
+                           yhom != 'YJR155W' &
+                           yhom != 'YNL331C' &
+                           yhom != 'YOL165C' &
+                           yhom != 'YOR192C' &
+                           yhom != 'YOR071C' &
+                           yhom != 'YHR137W' &
+                           yhom != 'YHR044C' &
+                           yhom != 'YHR043C' &
+                           yhom != 'YBL042C' &
+                           yhom != 'YIR028W' &
+                           yhom != 'YLR108C' )
+
+
+cogs.corrected.c <- cast(cogs.corrected, species ~ yhom)
+cogs.corrected.c.m <- as.matrix(cogs.corrected.c, dimnames = list(cogs.corrected.c$species))
+cogs.corrected.c.m <- cogs.corrected.c.m[-1,]
+colnames(cogs.corrected.c.m) <- colnames(cogs.corrected.c)[-1]
+cogs.corrected.c.m.t <- t(cogs.corrected.c.m)
+
+#Functional grouping of the genes, this I did manually based on the Spanu Science 2010 paper, but also changing some entries if new categorization is available.
+
+annot <- read.csv('gene_list_r.txt.atrrib.sorted.2.1.corrected',sep = '\t', header = F)
+
+storage.mode(cogs.corrected.c.m.t) <- 'integer'
+
+#remove bgh v3
+cogs.corrected.c.m.t <- cogs.corrected.c.m.t[,-1]
+
+#rename the columns to avoid more figure editing later
+
+colnames(cogs.corrected.c.m.t) <- c('B. graminis fsp hordeii', "B. graminis fsp tritici","Botrytis cinerea","Colletotrichum graminicola","Erysiphe necator",
+                          "Erysiphe pulchra","Fusarium oxysporum","Glarea lozoyensis","Golovinomyces cichoracearum", "Magnaporthe oryzae","Marssonina brunnea","Neurospora crassa",
+                          "Oidiodendron maius","Oidium neolycopersici", "Parauncinula polyspora", "Penicillium digitatum", "Phialocephala scopiformis",
+                          "Phialocephala subalpina", "Pseudogymnoascus destructans", "Pseudogymnoascus verrucosus",
+                          "Rhynchosporium agropyri", "Rhynchosporium commune", "Rhynchosporium secalis","Sclerotinia borealis", "Sclerotinia sclerotiorum","Verticillium dahliae", "Zymoseptoria tritici")      
+
+Heatmap(cogs.corrected.c.m.t,
+        col = colorpanel(2, low = 'whitesmoke', high = '#b2df8a'),
+        cluster_rows = F,
+        #cluster_columns = F,
+        split =  annot$V2,
+        gap = unit(1, "mm"),
+        row_names_gp = gpar(fontsize = 6),
+        show_heatmap_legend = T,
+        row_title_rot = 0,
+        row_title_gp = gpar(fontsize = 9),
+        column_names_gp = gpar(fontsize = 8),
+        name = 'CAGs'
+)
+
+
+
+```
+
+
+In addition to this I have generated a figure with all the trees for every CAG in the plot and added it as a supplementary figure. During the revision, we decided that this figure is not necessary since the main validation for the putative P. polyspora CAGs is that the closest homolog after blasting (blastp) to the nr is a Leotiomycete gene. In addition this figure is quite "dense" and hard to interpret easily.
+
 ```{R}
 
 #The trees here are coming from the Orthofinder analysis. I grabbed the individual trees which orthofinder generates and pasted them in a single file. 
-tree2 <- read.newick('/Users/lfrantzeskakis/projects/03_jp_mildews/10_missing_cogs/yeast_parau_homologs/alltrees_clean_labels.txt', keep.multi = T)
+tree2 <- read.newick('alltrees_clean_labels.txt', keep.multi = T)
 
-treenames <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/10_missing_cogs/yeast_parau_homologs/tree_names_yeast.csv', sep = ' ', header = F)
+treenames <- read.csv('tree_names_yeast.csv', sep = ' ', header = F)
 class(tree2) <- "multiPhylo"
 names(tree2) <- treenames$V3
 
@@ -645,7 +752,7 @@ ggtree(tree2, branch.length="none", layout="slanted")+
 ##### Suppl. Figure 7 - RNAse-like orthogroups
 ```{R}
 
-table1 <- read.csv('/Users/lfrantzeskakis/projects/03_jp_mildews/09_rnases/supl_fig_7/result.txt', sep = ' ', header = F)
+table1 <- read.csv('rnaselike_supf7.txt', sep = ' ', header = F)
 table1.m <- acast(table1,V1~V2, value.var = 'V3')
 
 ggplot(table1, aes(V2,V1))+
@@ -657,6 +764,7 @@ ggplot(table1, aes(V2,V1))+
   xlab('')+
   ylab('RNAse-like secreted protein containing orthogroup')
 
+#This is the bioRxiv version of the figure
 heatmap.2(table1.m,
           #margins =c(35,5),
           trace="none",
@@ -675,4 +783,25 @@ heatmap.2(table1.m,
           cellnote=table1.m,
           notecol='black'
 )
+
+#Later on I tried to make it a bit more legible
+
+table1.mt <- t(table1.m)
+
+pheatmap(table1.mt, 
+         color = colorpanel(10, low = 'snow',mid = 'tomato', high = 'darkred'),
+         #annotation_col = anno,
+         fontsize_row = 7.0,
+         fontsize_column = 0.5,
+         cellwidth = 10,
+         cellheight = 30,
+         display_numbers=T,
+         number_format = "%.0f",
+         cluster_rows=F,
+         number_color='black',
+         fontsize_number = 5.5)
+
 ```
+
+
+
