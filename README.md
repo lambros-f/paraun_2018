@@ -46,7 +46,42 @@ At the end you get 658405 contigs, Total 481 MB, Max 1,8 MB, Min 112bp , N50 of 
 
 After removing contigs less than 500bp you get 159829, Total 316 MB, Max 1,8 MB, Min 501bp, N50 of 4,1kb. So we remove a lot of the small contigs with not so much impact in the total sequence content. The small ones are not useful for the downstream analysis anyway.
 
-Ploting contig size and coverage shows that there no correlation, but that there is a population of contigs ~30x coverage and another with less than 2x. This 30x contigs are mostly Parauncinula, which is nice.
+Ploting contig size and coverage shows that there no correlation, but that there is a population of contigs ~30x coverage and another with less than 2x. This 30x contigs are mostly Parauncinula, which is nice. 
+
+Please *note* that here by coverage we mean average kmer coverage as reported from SPAdes (I also made sure to clarify this in the manuscript afterwards). The actual read depth, also provided in the Suppl. Figure 1, is higher than this. 
+
+Since kmer depth and read depth are related you can use this formula to get the read depth (see also http://seqanswers.com/forums/showthread.php?t=1529)
+```
+>NODE_1_length_563_cov_201.866791
+
+201.866791 is the kmer coverage Ck (read kmers per contig kmers)
+
+if you know your average read length you can convert to get x-coverage (read bp per contig bp)
+
+Cx=Ck*L/(L-k+1)
+
+where k is your kmer setting and L is your read length
+so if I used a kmer of 37 and an average read length of 50
+Cx=202*50/(50-37+1)=721X
+```
+
+However it is safer to just remap the reads on the assembly (for example with bwa) and get the read depth over x-size windows using samtools and bedtools, as I did for the manuscript:
+```
+# First make a fai for the assembly
+samtools faidx res.per_contigs.high_confidence.lst.fa
+
+# Then make a bed file with the windows at a desired size, ie 1kb
+bedtools makewindows -g res.per_contigs.high_confidence.lst.fa.fai -w 1000 > res.per_contigs.high_confidence.lst.fa.1kbwindows.bed
+
+#Get depth per base using samtools, after you map the reads
+samtools depth -a ../22_snps_on_high_conf/parau-polysp.dedupped.bam > parau-polysp.dedupped.bam.samtools.depth
+
+#Get total bases per window using samtools again
+samtools bedcov res.per_contigs.high_confidence.lst.fa.1kbwindows.bed ../22_snps_on_high_conf/parau-polysp.dedupped.bam > parau-polysp.dedupped.bam.samtools.1kbwindows.depth
+
+#Then you can imprort the .depth file in R, generate a column with the averages and generate a histogram. 
+
+```
 
 ## Cleaning up bacterial contaminating sequences
 
