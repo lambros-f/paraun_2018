@@ -80,6 +80,19 @@ samtools depth -a ../22_snps_on_high_conf/parau-polysp.dedupped.bam > parau-poly
 samtools bedcov res.per_contigs.high_confidence.lst.fa.1kbwindows.bed ../22_snps_on_high_conf/parau-polysp.dedupped.bam > parau-polysp.dedupped.bam.samtools.1kbwindows.depth
 
 #Then you can imprort the .depth file in R, generate a column with the averages and generate a histogram. 
+```
+
+For the figure I used this script in R:
+
+```
+depth_table <- read.csv('~/projects/03_jp_mildews/27_read_depth_calculation/read_depth_all_contigs_1kb.txt', sep = '\t', header = T)
+hist(depth_table$read_depth, breaks = 500, xlim = c(0,1000))
+
+hist(depth_table$read_depth, 
+     breaks = 'FD', 
+     xlim = c(0,1000),
+     xlab = 'Read depth',
+     main = 'Histogram of read depth in 1kb windows')
 
 ```
 
